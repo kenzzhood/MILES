@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Model Viewer Test</title>
+    <!-- Load model-viewer component -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background: #333;
+            color: white;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 500px;
+            background-color: #555;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>3D Viewer Test</h1>
+        <p>Testing model: <strong>triposr_1765168630.glb</strong></p>
+
+        <!-- The Model Viewer -->
+        <model-viewer src="/models/triposr_1765168630.glb" camera-controls auto-rotate ar shadow-intensity="1"
+            environment-image="neutral" exposure="1">
+        </model-viewer>
+
+        <p>If you see a grey box but no model, the model file might be corrupted.</p>
+        <p>If you see nothing at all, the model-viewer script isn't loading (check internet/extensions).</p>
+    </div>
+</body>
+
+</html>

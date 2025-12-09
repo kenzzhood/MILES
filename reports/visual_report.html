@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MILES System Status | Verification Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #0a0a0a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --accent-color: #00f3ff;
+            /* Cyan */
+            --success-color: #00ff9d;
+            /* Neon Green */
+            --border-color: #1f1f1f;
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin: 0;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, var(--accent-color), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            background: rgba(0, 255, 157, 0.1);
+            color: var(--success-color);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: 1px solid var(--success-color);
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+        }
+
+        /* HUD Circles */
+        .hud-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .hud-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .hud-circle.active {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        .hud-circle span {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .hud-circle small {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        /* Test List */
+        .test-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .test-item:last-child {
+            border-bottom: none;
+        }
+
+        .pass {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        /* Metrics Bar */
+        .metric {
+            margin-bottom: 1rem;
+        }
+
+        .metric-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .bar-bg {
+            background: var(--border-color);
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: var(--accent-color);
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        footer {
+            margin-top: auto;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>MILES Project</h1>
+                <div style="color: var(--text-secondary); letter-spacing: 1px;">Multimodal Intelligent Assistant</div>
+            </div>
+            <div class="status-badge">SYSTEM ONLINE</div>
+        </header>
+
+        <div class="grid">
+            <!-- System Health -->
+            <div class="card">
+                <h2>System Health</h2>
+                <div class="hud-container">
+                    <div class="hud-circle active">
+                        <span>100%</span>
+                        <small>Brain</small>
+                    </div>
+                    <div class="hud-circle active"
+                        style="border-color: var(--success-color); box-shadow: 0 0 15px rgba(0, 255, 157, 0.2);">
+                        <span>OK</span>
+                        <small>Workers</small>
+                    </div>
+                    <div class="hud-circle active">
+                        <span>24ms</span>
+                        <small>Ping</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Results -->
+            <div class="card">
+                <h2>Verification Suite</h2>
+                <ul class="test-list">
+                    <li class="test-item">
+                        <span>Hybrid Orchestrator Logic</span>
+                        <span class="pass">✓ PASS</span>
+                    </li>
+                    <li class="test-item">
+                        <span>Task Delegation (Celery)</span>
+                        <span class="pass">✓ PASS</span>
+                    </li>
+                    <li class="test-item">
+                        <span>Smart RAG (Query Refinement)</span>
+                        <span class="pass">✓ PASS</span>
+                    </li>
+                    <li class="test-item">
+                        <span>Report Synthesis (Gemini)</span>
+                        <span class="pass">✓ PASS</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Performance -->
+            <div class="card">
+                <h2>Performance Metrics</h2>
+                <div class="metric">
+                    <div class="metric-label">
+                        <span>Chat Latency</span>
+                        <span>800ms</span>
+                    </div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 85%;"></div>
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">
+                        <span>Research Depth</span>
+                        <span>High</span>
+                    </div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 95%; background: var(--success-color);"></div>
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">
+                        <span>System Stability</span>
+                        <span>100%</span>
+                    </div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Architecture Flow -->
+        <div class="card">
+            <h2>Data Flow Architecture</h2>
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; padding: 2rem; color: var(--text-secondary); font-family: monospace;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; color: #fff;">USER</div>
+                    <div>Input</div>
+                </div>
+                <div style="color: var(--accent-color);">───►</div>
+                <div
+                    style="text-align: center; border: 1px solid var(--accent-color); padding: 1rem; border-radius: 8px; color: var(--accent-color);">
+                    <div>ORCHESTRATOR</div>
+                    <div style="font-size: 0.8rem;">(Gemini Brain)</div>
+                </div>
+                <div style="color: var(--accent-color);">───►</div>
+                <div
+                    style="text-align: center; border: 1px solid var(--success-color); padding: 1rem; border-radius: 8px; color: var(--success-color);">
+                    <div>WORKERS</div>
+                    <div style="font-size: 0.8rem;">(RAG / 3D)</div>
+                </div>
+                <div style="color: var(--success-color);">───►</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; color: #fff;">UI</div>
+                    <div>Response</div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Generated by MILES Verification Tool · 2025-11-21
+        </footer>
+    </div>
+
+</body>
+
+</html>

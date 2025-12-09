@@ -1,0 +1,175 @@
+Using pip 23.2.1 from E:\Projects\MILES\miles_project\.venv\Lib\site-packages\pip (python 3.12)
+Processing e:\projects\miles\miles_project\src\libs\stable-fast-3d\texture_baker
+  Preparing metadata (setup.py): started
+  Running command python setup.py egg_info
+  [<setuptools.extension.Extension('texture_baker._C') at 0x2477fb38170>]
+  running egg_info
+  creating C:\Users\Goutham Srinath\AppData\Local\Temp\pip-pip-egg-info-el6oye1e\texture_baker.egg-info
+  writing C:\Users\Goutham Srinath\AppData\Local\Temp\pip-pip-egg-info-el6oye1e\texture_baker.egg-info\PKG-INFO
+  writing dependency_links to C:\Users\Goutham Srinath\AppData\Local\Temp\pip-pip-egg-info-el6oye1e\texture_baker.egg-info\dependency_links.txt
+  writing top-level names to C:\Users\Goutham Srinath\AppData\Local\Temp\pip-pip-egg-info-el6oye1e\texture_baker.egg-info\top_level.txt
+  writing manifest file 'C:\Users\Goutham Srinath\AppData\Local\Temp\pip-pip-egg-info-el6oye1e\texture_baker.egg-info\SOURCES.txt'
+  reading manifest file 'C:\Users\Goutham Srinath\AppData\Local\Temp\pip-pip-egg-info-el6oye1e\texture_baker.egg-info\SOURCES.txt'
+  writing manifest file 'C:\Users\Goutham Srinath\AppData\Local\Temp\pip-pip-egg-info-el6oye1e\texture_baker.egg-info\SOURCES.txt'
+  Preparing metadata (setup.py): finished with status 'done'
+Building wheels for collected packages: texture_baker
+  Building wheel for texture_baker (setup.py): started
+  Running command python setup.py bdist_wheel
+  [<setuptools.extension.Extension('texture_baker._C') at 0x1eb958ccad0>]
+  running bdist_wheel
+  running build
+  running build_py
+  creating build
+  creating build\lib.win-amd64-cpython-312
+  creating build\lib.win-amd64-cpython-312\texture_baker
+  copying .\texture_baker\baker.py -> build\lib.win-amd64-cpython-312\texture_baker
+  copying .\texture_baker\__init__.py -> build\lib.win-amd64-cpython-312\texture_baker
+  creating build\lib.win-amd64-cpython-312\texture_baker\csrc
+  copying .\texture_baker\csrc\baker.h -> build\lib.win-amd64-cpython-312\texture_baker\csrc
+  copying .\texture_baker\csrc\baker_kernel.metal -> build\lib.win-amd64-cpython-312\texture_baker\csrc
+  running build_ext
+  E:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\utils\cpp_extension.py:448: UserWarning: The detected CUDA version (12.5) has a minor version mismatch with the version that was used to compile PyTorch (12.4). Most likely this shouldn't be a problem.
+    warnings.warn(CUDA_MISMATCH_WARN.format(cuda_str_version, torch.version.cuda))
+  building 'texture_baker._C' extension
+  creating E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312
+  creating E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312\Release
+  creating E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312\Release\texture_baker
+  creating E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312\Release\texture_baker\csrc
+  E:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\utils\cpp_extension.py:2059: UserWarning: TORCH_CUDA_ARCH_LIST is not set, all archs for visible cards are included for compilation.
+  If this is not desired, please set os.environ['TORCH_CUDA_ARCH_LIST'].
+    warnings.warn(
+  Emitting ninja build file E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312\Release\build.ninja...
+  Compiling objects...
+  Allowing ninja to set a default number of workers... (overridable by setting the environment variable MAX_JOBS=N)
+  [1/2] C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvcc --generate-dependencies-with-compile --dependency-output E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312\Release\texture_baker\csrc\baker_kernel.obj.d -std=c++17 --use-local-env -Xcompiler /MD -Xcompiler /wd4819 -Xcompiler /wd4251 -Xcompiler /wd4244 -Xcompiler /wd4267 -Xcompiler /wd4275 -Xcompiler /wd4018 -Xcompiler /wd4190 -Xcompiler /wd4624 -Xcompiler /wd4067 -Xcompiler /wd4068 -Xcompiler /EHsc -Xcudafe --diag_suppress=base_class_has_different_dll_interface -Xcudafe --diag_suppress=field_without_dll_interface -Xcudafe --diag_suppress=dll_interface_conflict_none_assumed -Xcudafe --diag_suppress=dll_interface_conflict_dllexport_assumed -DTHRUST_IGNORE_CUB_VERSION_CHECK -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include\torch\csrc\api\include -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include\TH -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include\THC "-IC:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\include" -IE:\Projects\MILES\miles_project\.venv\include "-IC:\Users\Goutham Srinath\AppData\Local\Programs\Python\Python39\python.exe'\include" "-IC:\Users\Goutham Srinath\AppData\Local\Programs\Python\Python39\python.exe'\Include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include" "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.22621.0\ucrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\um" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\shared" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\winrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\cppwinrt" -c E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\texture_baker\csrc\baker_kernel.cu -o E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312\Release\texture_baker\csrc\baker_kernel.obj -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr -O2 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -D_GLIBCXX_USE_CXX11_ABI=0 -gencode=arch=compute_86,code=compute_86 -gencode=arch=compute_86,code=sm_86
+  FAILED: [code=1] E:/Projects/MILES/miles_project/src/libs/stable-fast-3d/texture_baker/build/temp.win-amd64-cpython-312/Release/texture_baker/csrc/baker_kernel.obj
+  C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin\nvcc --generate-dependencies-with-compile --dependency-output E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312\Release\texture_baker\csrc\baker_kernel.obj.d -std=c++17 --use-local-env -Xcompiler /MD -Xcompiler /wd4819 -Xcompiler /wd4251 -Xcompiler /wd4244 -Xcompiler /wd4267 -Xcompiler /wd4275 -Xcompiler /wd4018 -Xcompiler /wd4190 -Xcompiler /wd4624 -Xcompiler /wd4067 -Xcompiler /wd4068 -Xcompiler /EHsc -Xcudafe --diag_suppress=base_class_has_different_dll_interface -Xcudafe --diag_suppress=field_without_dll_interface -Xcudafe --diag_suppress=dll_interface_conflict_none_assumed -Xcudafe --diag_suppress=dll_interface_conflict_dllexport_assumed -DTHRUST_IGNORE_CUB_VERSION_CHECK -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include\torch\csrc\api\include -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include\TH -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include\THC "-IC:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\include" -IE:\Projects\MILES\miles_project\.venv\include "-IC:\Users\Goutham Srinath\AppData\Local\Programs\Python\Python39\python.exe'\include" "-IC:\Users\Goutham Srinath\AppData\Local\Programs\Python\Python39\python.exe'\Include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include" "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.22621.0\ucrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\um" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\shared" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\winrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\cppwinrt" -c E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\texture_baker\csrc\baker_kernel.cu -o E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312\Release\texture_baker\csrc\baker_kernel.obj -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr -O2 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -D_GLIBCXX_USE_CXX11_ABI=0 -gencode=arch=compute_86,code=compute_86 -gencode=arch=compute_86,code=sm_86
+  [2/2] cl /showIncludes /nologo /O2 /W3 /GL /DNDEBUG /MD /MD /wd4819 /wd4251 /wd4244 /wd4267 /wd4275 /wd4018 /wd4190 /wd4624 /wd4067 /wd4068 /EHsc -DTHRUST_IGNORE_CUB_VERSION_CHECK -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include\torch\csrc\api\include -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include\TH -IE:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\include\THC "-IC:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\include" -IE:\Projects\MILES\miles_project\.venv\include "-IC:\Users\Goutham Srinath\AppData\Local\Programs\Python\Python39\python.exe'\include" "-IC:\Users\Goutham Srinath\AppData\Local\Programs\Python\Python39\python.exe'\Include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.37.32822\include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include" "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.22621.0\ucrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\um" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\shared" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\winrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\cppwinrt" -c E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\texture_baker\csrc\baker.cpp /FoE:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\build\temp.win-amd64-cpython-312\Release\texture_baker\csrc\baker.obj /O2 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=_C -D_GLIBCXX_USE_CXX11_ABI=0 /std:c++17
+  ninja: build stopped: subcommand failed.
+  Traceback (most recent call last):
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\utils\cpp_extension.py", line 2209, in _run_ninja_build
+      subprocess.run(
+    File "C:\Users\Goutham Srinath\AppData\Local\Programs\Python\Python39\python.exe'\Lib\subprocess.py", line 571, in run
+      raise CalledProcessError(retcode, process.args,
+  subprocess.CalledProcessError: Command '['ninja', '-v']' returned non-zero exit status 1.
+
+  The above exception was the direct cause of the following exception:
+
+  Traceback (most recent call last):
+    File "<string>", line 2, in <module>
+    File "<pip-setuptools-caller>", line 34, in <module>
+    File "E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\setup.py", line 117, in <module>
+      setup(
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\__init__.py", line 103, in setup
+      return distutils.core.setup(**attrs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\core.py", line 184, in setup
+      return run_commands(dist)
+             ^^^^^^^^^^^^^^^^^^
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\core.py", line 200, in run_commands
+      dist.run_commands()
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\dist.py", line 970, in run_commands
+      self.run_command(cmd)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\dist.py", line 974, in run_command
+      super().run_command(command)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\dist.py", line 989, in run_command
+      cmd_obj.run()
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\command\bdist_wheel.py", line 373, in run
+      self.run_command("build")
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\cmd.py", line 316, in run_command
+      self.distribution.run_command(command)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\dist.py", line 974, in run_command
+      super().run_command(command)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\dist.py", line 989, in run_command
+      cmd_obj.run()
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\command\build.py", line 135, in run
+      self.run_command(cmd_name)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\cmd.py", line 316, in run_command
+      self.distribution.run_command(command)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\dist.py", line 974, in run_command
+      super().run_command(command)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\dist.py", line 989, in run_command
+      cmd_obj.run()
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\command\build_ext.py", line 93, in run
+      _build_ext.run(self)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\command\build_ext.py", line 359, in run
+      self.build_extensions()
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\utils\cpp_extension.py", line 900, in build_extensions
+      build_ext.build_extensions(self)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\command\build_ext.py", line 479, in build_extensions
+      self._build_extensions_serial()
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\command\build_ext.py", line 505, in _build_extensions_serial
+      self.build_extension(ext)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\command\build_ext.py", line 254, in build_extension
+      _build_ext.build_extension(self, ext)
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\setuptools\_distutils\command\build_ext.py", line 560, in build_extension
+      objects = self.compiler.compile(
+                ^^^^^^^^^^^^^^^^^^^^^^
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\utils\cpp_extension.py", line 872, in win_wrap_ninja_compile
+      _write_ninja_file_and_compile_objects(
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\utils\cpp_extension.py", line 1869, in _write_ninja_file_and_compile_objects
+      _run_ninja_build(
+    File "E:\Projects\MILES\miles_project\.venv\Lib\site-packages\torch\utils\cpp_extension.py", line 2225, in _run_ninja_build
+      raise RuntimeError(message) from e
+  RuntimeError: Error compiling objects for extension
+  error: subprocess-exited-with-error
+  
+  python setup.py bdist_wheel did not run successfully.
+  exit code: 1
+  
+  See above for output.
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  full command: 'E:\Projects\MILES\miles_project\.venv\Scripts\python.exe' -u -c '
+  exec(compile('"'"''"'"''"'"'
+  # This is <pip-setuptools-caller> -- a caller that pip uses to run setup.py
+  #
+  # - It imports setuptools before invoking setup.py, to enable projects that directly
+  #   import from `distutils.core` to work with newer packaging standards.
+  # - It provides a clear error message when setuptools is not installed.
+  # - It sets `sys.argv[0]` to the underlying `setup.py`, when invoking `setup.py` so
+  #   setuptools doesn'"'"'t think the script is `-c`. This avoids the following warning:
+  #     manifest_maker: standard file '"'"'-c'"'"' not found".
+  # - It generates a shim setup.py, for handling setup.cfg-only projects.
+  import os, sys, tokenize
+  
+  try:
+      import setuptools
+  except ImportError as error:
+      print(
+          "ERROR: Can not execute `setup.py` since setuptools is not available in "
+          "the build environment.",
+          file=sys.stderr,
+      )
+      sys.exit(1)
+  
+  __file__ = %r
+  sys.argv[0] = __file__
+  
+  if os.path.exists(__file__):
+      filename = __file__
+      with tokenize.open(__file__) as f:
+          setup_py_code = f.read()
+  else:
+      filename = "<auto-generated setuptools caller>"
+      setup_py_code = "from setuptools import setup; setup()"
+  
+  exec(compile(setup_py_code, filename, "exec"))
+  '"'"''"'"''"'"' % ('"'"'E:\\Projects\\MILES\\miles_project\\src\\libs\\stable-fast-3d\\texture_baker\\setup.py'"'"',), "<pip-setuptools-caller>", "exec"))' bdist_wheel -d 'C:\Users\Goutham Srinath\AppData\Local\Temp\pip-wheel-npmup2ja'
+  cwd: E:\Projects\MILES\miles_project\src\libs\stable-fast-3d\texture_baker\
+  Building wheel for texture_baker (setup.py): finished with status 'error'
+  ERROR: Failed building wheel for texture_baker
+  Running setup.py clean for texture_baker
+  Running command python setup.py clean
+  [<setuptools.extension.Extension('texture_baker._C') at 0x20bafdc03e0>]
+  running clean
+  removing 'build\temp.win-amd64-cpython-312' (and everything under it)
+  removing 'build\lib.win-amd64-cpython-312' (and everything under it)
+  'build\bdist.win-amd64' does not exist -- can't clean it
+  'build\scripts-3.12' does not exist -- can't clean it
+  removing 'build'
+Failed to build texture_baker
+ERROR: Could not build wheels for texture_baker, which is required to install pyproject.toml-based projects
+
+[notice] A new release of pip is available: 23.2.1 -> 25.3
+[notice] To update, run: python.exe -m pip install --upgrade pip

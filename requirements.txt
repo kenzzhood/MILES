@@ -1,0 +1,28 @@
+# Core Backend
+fastapi
+uvicorn[standard]
+
+# Task Queue (Orchestrator-Worker)
+celery
+redis
+
+# Orchestrator "Brains"
+google-generativeai
+ollama
+
+# Pydantic (Core Schemas)
+pydantic
+
+# HTTP clients / lightweight research helpers
+requests
+tavily-python
+
+# Local 3D Generation (TripoSR)
+torch
+transformers
+rembg
+trimesh
+omegaconf
+einops
+pillow
+# TripoSR installed manually in src/libs/TripoSR

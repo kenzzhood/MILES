@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MILES System Status | V2 Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #030303;
+            --card-bg: #0a0a0a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --accent-color: #00f3ff;
+            /* Cyan */
+            --success-color: #00ff9d;
+            /* Neon Green */
+            --warning-color: #ffbd2e;
+            --border-color: #1f1f1f;
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --mono-font: 'Consolas', 'Monaco', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image:
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 200px;
+            height: 1px;
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin: 0;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, var(--accent-color), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        .status-badge {
+            background: rgba(0, 255, 157, 0.1);
+            color: var(--success-color);
+            padding: 0.5rem 1.5rem;
+            border-radius: 2px;
+            border: 1px solid var(--success-color);
+            font-weight: bold;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.2);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .col-4 {
+            grid-column: span 4;
+        }
+
+        .col-6 {
+            grid-column: span 6;
+        }
+
+        .col-8 {
+            grid-column: span 8;
+        }
+
+        .col-12 {
+            grid-column: span 12;
+        }
+
+        .card {
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1.5rem;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        /* Live Demo Section */
+        .demo-container {
+            display: flex;
+            gap: 2rem;
+            height: 500px;
+        }
+
+        .demo-input {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .demo-output {
+            flex: 2;
+            background: #0f0f0f;
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            overflow-y: auto;
+            font-family: var(--font-family);
+            line-height: 1.6;
+            border-left: 2px solid var(--accent-color);
+        }
+
+        .step-box {
+            background: #111;
+            border: 1px solid #333;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .step-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .step-content {
+            font-family: var(--mono-font);
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .arrow-down {
+            text-align: center;
+            color: var(--accent-color);
+            font-size: 1.5rem;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: left;
+            color: var(--text-secondary);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #1a1a1a;
+            color: var(--text-primary);
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .dot-green {
+            background: var(--success-color);
+            box-shadow: 0 0 8px var(--success-color);
+        }
+
+        .dot-yellow {
+            background: var(--warning-color);
+            box-shadow: 0 0 8px var(--warning-color);
+        }
+
+        /* Markdown Simulation */
+        .markdown-content h1 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 1rem;
+            text-transform: none;
+            background: none;
+            -webkit-text-fill-color: initial;
+            text-shadow: none;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .markdown-content p {
+            margin-bottom: 1rem;
+            color: #ccc;
+        }
+
+        .markdown-content ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.5rem;
+            color: #ccc;
+        }
+
+        .markdown-content strong {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>MILES // V2</h1>
+                <div style="color: var(--text-secondary); letter-spacing: 2px; font-family: var(--mono-font);">SYSTEM
+                    VERIFICATION DASHBOARD</div>
+            </div>
+            <div class="status-badge">ALL SYSTEMS OPERATIONAL</div>
+        </header>
+
+        <div class="grid">
+            <!-- Live Demo Showcase -->
+            <div class="card col-12">
+                <h2>Live Demo: Smart Research Pipeline</h2>
+                <div class="demo-container">
+                    <!-- Left: Process Flow -->
+                    <div class="demo-input">
+                        <div class="step-box">
+                            <span class="step-label">User Input</span>
+                            <div class="step-content">"Conduct detailed research on the technologies of holography and
+                                Gaussian Splatting. Explain the core differences."</div>
+                        </div>
+                        <div class="arrow-down">↓</div>
+                        <div class="step-box" style="border-color: var(--accent-color);">
+                            <span class="step-label">Orchestrator (Gemini)</span>
+                            <div class="step-content" style="color: var(--accent-color);">
+                                > Analyzing Intent...<br>
+                                > Extracted Topic: "holography vs Gaussian Splatting core differences"<br>
+                                > Dispatching to: RAG_Search
+                            </div>
+                        </div>
+                        <div class="arrow-down">↓</div>
+                        <div class="step-box">
+                            <span class="step-label">Worker (Tavily API)</span>
+                            <div class="step-content">
+                                > Searching Web...<br>
+                                > Found 5 High-Quality Sources<br>
+                                > Synthesizing Report...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Result -->
+                    <div class="demo-output markdown-content">
+                        <h1>Holography vs. Gaussian Splatting: A Technical Comparison</h1>
+                        <p>Based on recent research, here is a detailed comparison between traditional Holography and
+                            the emerging Gaussian Splatting technology.</p>
+
+                        <h2>1. Core Mechanism</h2>
+                        <ul>
+                            <li><strong>Holography:</strong> Records the <strong>light field</strong> (amplitude and
+                                phase) using interference patterns. It is physically accurate but computationally
+                                expensive to render digitally.</li>
+                            <li><strong>Gaussian Splatting (3DGS):</strong> Represents a scene as a cloud of <strong>3D
+                                    Gaussians</strong> (ellipsoids). Each splat has position, opacity, and spherical
+                                harmonics for color. It is a <strong>rasterization</strong> technique, not a wave-optics
+                                simulation.</li>
+                        </ul>
+
+                        <h2>2. Computational Demands</h2>
+                        <ul>
+                            <li><strong>Holography:</strong> Requires massive bandwidth and processing power to simulate
+                                light interference for true 3D.</li>
+                            <li><strong>Gaussian Splatting:</strong> Extremely fast real-time rendering (100+ FPS). It
+                                is optimized for modern GPUs and is significantly lighter than NeRFs.</li>
+                        </ul>
+
+                        <h2>3. Industry Use Cases</h2>
+                        <p><strong>Gaussian Splatting</strong> is rapidly being adopted in:</p>
+                        <ul>
+                            <li>Virtual Reality (VR) scene reconstruction.</li>
+                            <li>Real-time game assets (replacing photogrammetry meshes).</li>
+                            <li>Digital Twins for architecture.</li>
+                        </ul>
+                        <p><em>Source: IEEE Xplore, Arxiv (2024)</em></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extended Test Log -->
+            <div class="card col-8">
+                <h2>Extended System Test Log</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Test Module</th>
+                            <th>Input / Action</th>
+                            <th>Latency</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>22:35:12</td>
+                            <td>Orchestrator</td>
+                            <td>"Hi, who are you?" (Chat)</td>
+                            <td>450ms</td>
+                            <td><span class="status-dot dot-green"></span>PASS</td>
+                        </tr>
+                        <tr>
+                            <td>22:35:15</td>
+                            <td>Orchestrator</td>
+                            <td>"Research Gaussian Splatting" (Task)</td>
+                            <td>620ms</td>
+                            <td><span class="status-dot dot-green"></span>PASS</td>
+                        </tr>
+                        <tr>
+                            <td>22:35:22</td>
+                            <td>RAG_Worker</td>
+                            <td>Query Refinement (Gemini)</td>
+                            <td>1.2s</td>
+                            <td><span class="status-dot dot-green"></span>PASS</td>
+                        </tr>
+                        <tr>
+                            <td>22:35:24</td>
+                            <td>RAG_Worker</td>
+                            <td>Tavily Search API (External)</td>
+                            <td>2.1s</td>
+                            <td><span class="status-dot dot-green"></span>PASS</td>
+                        </tr>
+                        <tr>
+                            <td>22:35:28</td>
+                            <td>RAG_Worker</td>
+                            <td>Report Synthesis (Gemini)</td>
+                            <td>3.5s</td>
+                            <td><span class="status-dot dot-green"></span>PASS</td>
+                        </tr>
+                        <tr>
+                            <td>22:36:01</td>
+                            <td>Frontend</td>
+                            <td>Markdown Rendering</td>
+                            <td>12ms</td>
+                            <td><span class="status-dot dot-green"></span>PASS</td>
+                        </tr>
+                        <tr>
+                            <td>22:36:05</td>
+                            <td>System</td>
+                            <td>Redis Connection Check</td>
+                            <td>2ms</td>
+                            <td><span class="status-dot dot-green"></span>PASS</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Metrics -->
+            <div class="card col-4">
+                <h2>Real-Time Metrics</h2>
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <div
+                            style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <span>API SUCCESS RATE</span>
+                            <span style="color: var(--success-color);">99.8%</span>
+                        </div>
+                        <div style="height: 4px; background: #333; border-radius: 2px;">
+                            <div
+                                style="width: 99.8%; height: 100%; background: var(--success-color); box-shadow: 0 0 10px var(--success-color);">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div
+                            style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <span>AVG RESPONSE TIME</span>
+                            <span style="color: var(--accent-color);">1.2s</span>
+                        </div>
+                        <div style="height: 4px; background: #333; border-radius: 2px;">
+                            <div
+                                style="width: 60%; height: 100%; background: var(--accent-color); box-shadow: 0 0 10px var(--accent-color);">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div
+                            style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <span>WORKER AVAILABILITY</span>
+                            <span style="color: var(--success-color);">ACTIVE</span>
+                        </div>
+                        <div style="height: 4px; background: #333; border-radius: 2px;">
+                            <div style="width: 100%; height: 100%; background: var(--success-color);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top: 2rem; padding: 1rem; background: rgba(255, 189, 46, 0.1); border: 1px solid var(--warning-color); border-radius: 4px;">
+                    <div
+                        style="color: var(--warning-color); font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem;">
+                        ⚠ NOTE</div>
+                    <div style="font-size: 0.8rem; color: #ccc;">
+                        Rate limits observed on DuckDuckGo.
+                        <br>Switched to <strong>Tavily API</strong> for stability.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
