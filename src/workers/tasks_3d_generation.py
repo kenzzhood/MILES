@@ -26,14 +26,39 @@ def generate_3d_model(prompt: str) -> str:
     """
     print(f"STARTING 3D_Generator (SF3D Local): '{prompt}'")
     
+    # Determine if prompt is a file path or a text description
     image_path = prompt
+    is_text_prompt = not os.path.exists(image_path) and not image_path.startswith("http")
     
-    # Validation
+    # Lazy import to avoid circular dependencies if any
+    from ..services.image_gen_service import image_gen_service
+    from ..core.memory import memory
+
+    if is_text_prompt:
+        # Check Memory for a previously generated image to use as reference
+        previous_image = None
+        # We search backwards through active session files for a PNG
+        if memory.active_session_files:
+            for f in reversed(memory.active_session_files):
+                if f.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    previous_image = f
+                    break
+        
+        try:
+            if previous_image and os.path.exists(previous_image):
+                print(f"Refining previous image: {os.path.basename(previous_image)}")
+                image_path = image_gen_service.refine_image(previous_image, prompt)
+                print(f"Refined concept saved at: {image_path}")
+            else:
+                print(f"Generating new concept image for: '{prompt}'...")
+                image_path = image_gen_service.generate_image(prompt)
+                print(f"Concept image generated at: {image_path}")
+
+        except Exception as e:
+             return f"Error generating concept image: {e}"
+
     if not os.path.exists(image_path):
-        # Fallback for testing or if prompt is text
-        print(f"Input '{image_path}' is not a file. Checking known test images...")
-        # (Optional: Add fallback logic here)
-        return f"Error: Input image not found at '{image_path}'. Please provide a valid file path."
+        return f"Error: Input image not found at '{image_path}'. Please provide a valid file path or text description."
 
     try:
         print("Delegating to SF3DService...")
@@ -44,16 +69,24 @@ def generate_3d_model(prompt: str) -> str:
             
         filename = os.path.basename(glb_path)
         
-        # We assume the service returns the full path in the portable output dir.
-        # We can link it or copy it to the models dir for the web UI.
+        # Register the generated model in memory (temp by default)
+        memory.register_file(glb_path, is_temp=True)
+
+        # Copy to accessible models directory (so the UI can see it)
+        # We treat the 'models' dir as a cache/staging area too.
+        # True persistence only happens if user asks to 'save'.
         target_path = MODELS_DIR / filename
-        
-        # Copy/Move file to accessible models directory
         import shutil
         shutil.copy(glb_path, target_path)
         
         print(f"Model available at: {target_path}")
-        return f"3D Model Generated (SF3D). [View Model](/models/{filename})"
+        
+        # Return a rich response with the image and model
+        return (
+            f"**3D Model Generated**\n\n"
+            f"Concept Image used: {os.path.basename(image_path)}\n"
+            f"Model: [View Model](/models/{filename})"
+        )
 
     except Exception as e:
         print(f"SF3D Worker Error: {e}")

@@ -44,6 +44,9 @@ class OrchestratorPlan(BaseModel):
     direct_response: Optional[str] = Field(
         None, description="Immediate answer generated without dispatching to workers."
     )
+    save_memory: bool = Field(
+        False, description="Flag indicating if the user wants to permanently save the generated assets."
+    )
 
 
 class TaskDispatchResponse(BaseModel):

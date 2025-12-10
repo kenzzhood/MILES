@@ -18,7 +18,7 @@ from src.services.sf3d_service import sf3d_service
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("[MILES] Starting System...")
+    print("[MILES] Starting System v2.0 (STRICT CHAT MODE)...")
     sf3d_service.start_service()
     yield
     # Shutdown

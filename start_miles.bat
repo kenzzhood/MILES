@@ -9,7 +9,7 @@ start "MILES Worker" /min celery -A src.workers.celery_app worker --loglevel=inf
 :: 2. Start FastAPI Server (Main Interface)
 echo Starting Orchestrator API...
 :: This will also trigger the SF3D Service startup via lifespan events
-uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
 
 :: Pause if uvicorn exits
 pause

@@ -53,13 +53,13 @@ def get_orchestrator() -> OrchestratorBase:
     """
 
     if config.BRAIN_MODE == "GEMINI":
-        from .gemini_orchestrator import GeminiOrchestrator
+        from .gemini_brain import GeminiOrchestrator
 
         if config.GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_GOES_HERE":
             raise ValueError("Please set your GEMINI_API_KEY in src/config.py")
 
         return GeminiOrchestrator(
-            api_key=config.GEMINI_API_KEY, model_name=config.GEMINI_MODEL_NAME
+            model_name=config.GEMINI_MODEL_NAME
         )
 
     if config.BRAIN_MODE == "LOCAL":

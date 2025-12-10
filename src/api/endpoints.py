@@ -45,10 +45,13 @@ async def handle_interaction(request: UserRequest) -> TaskDispatchResponse:
 
     try:
         # 1. Get the current "brain" (Gemini or Ollama)
+        print(f"[DEBUG_ENDPOINT] Received request: '{request.prompt}'")
         orchestrator = get_orchestrator()
+        print(f"[DEBUG_ENDPOINT] Brain Type: {type(orchestrator)}")
 
         # 2. Ask the brain to process the request (Hybrid Decision)
         plan = orchestrator.decompose_task(request.prompt)
+        print(f"[DEBUG_ENDPOINT] Plan Generated: {plan}")
 
         if not plan.tasks and not plan.direct_response:
             raise HTTPException(status_code=400, detail="Orchestrator could not generate a valid response.")
