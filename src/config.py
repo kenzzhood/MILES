@@ -15,13 +15,11 @@ BRAIN_MODE = "GEMINI"
 # !! IMPORTANT: Never commit real API keys to Git.
 # !! Use environment variables in a real application.
 # !! For this research prototype, we place it here for simplicity.
-GEMINI_API_KEY = "AIzaSyCXvH2GY3yJK9qN947nBwL8LDljIMRCE_0"
-GEMINI_API_KEYS = [
-    "AIzaSyCXvH2GY3yJK9qN947nBwL8LDljIMRCE_0", # Primary (Good)
-    "AIzaSyA65YZ5QGt4ZWMf1WO1lri-vGccIIDxrIE", # Secondary (Limited)
-]
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_GOES_HERE")
+# Load multiple keys for rotation if available (comma-separated)
+GEMINI_API_KEYS = os.environ.get("GEMINI_API_KEYS", "").split(",") if os.environ.get("GEMINI_API_KEYS") else []
 GEMINI_MODEL_NAME = "models/gemini-flash-latest"
-TAVILY_API_KEY = "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"
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "YOUR_TAVILY_API_KEY_HERE")
 
 # --- Local Model Config ---
 # Ensure you have run 'ollama run llama3.1:8b' in your terminal
