@@ -3,6 +3,7 @@ Configuration for the MILES Project.
 
 This file contains the master switch for selecting the Orchestrator's "brain."
 """
+import os
 
 # Set to "DEMO" for the deterministic mock brain.
 # Set to "GEMINI" to use the fast, powerful online API.
@@ -31,7 +32,6 @@ REDIS_BROKER_URL = "redis://localhost:6379/0"
 REDIS_BACKEND_URL = "redis://localhost:6379/1"
 
 # Tencent Cloud Credentials
-TENCENT_SECRET_ID = "IKIDmoeFcoMm6KMCp6B7uXzqdEahmkdXdAiD"
-TENCENT_SECRET_KEY = "X1Uq8Mj8VvT4iPBAza9nWG50x0DU9tbF"
+TENCENT_SECRET_ID = os.environ.get("TENCENT_SECRET_ID", "")
+TENCENT_SECRET_KEY = os.environ.get("TENCENT_SECRET_KEY", "")
 TENCENT_REGION = "ap-shanghai"
-
