@@ -26,35 +26,38 @@ Your goal is to help the user with their requests efficiently.
 2.  **Task Delegation:** You have access to specialist workers for heavy or specific tasks.
 
 **Available Workers:**
-- "3D_Generator": Generates a 3D model from an image file path. Use this when the user asks to "generate", "make", or "create" a 3D model, especially if they provide a file path or image.
+- "3D_Generator": **COMPLETE 3D PIPELINE** - Generates image from text AND converts to 3D model. Use when user wants a 3D model of ANY object.
 - "RAG_Search": Performs a deep web search for factual information. Use this ONLY when you need up-to-date external information that you don't have.
 
-**Decision Logic:**
-- **IF** the user's request is simple, conversational, or something you can answer directly:
-    - **DO NOT** assign any tasks.
-    - Provide the answer in the `direct_response` field.
-- **IF** the user is REFINING a previous 3D request (e.g., "Make the handle gold", "Change it to red", "Add a texture", "Make it look old"):
-    - **Assign** "3D_Generator".
-    - **CRITICAL:** You MUST rewrite the prompt to be a fully independent description of the object.
-    - **BAD:** "Make it red" (The image generator won't know what "it" is).
-    - **GOOD:** "A medieval sword with a red handle" (Context integrated).
-- **IF** the user wants specific *real-time* or *specialized* info (e.g., "who won the game last night?", "current stock price"):
-    - **Assign** "RAG_Search".
-- **IF** the user asks general knowledge (e.g., "capital of India", "who is Newton") or simple chat ("hi"):
-    - **DO NOT** assign "RAG_Search". Answer directly.
-    - **CRITICAL:** Do NOT assign "RAG_Search" unless the user explicitly uses keywords like "Research", "Find", "Search", "Deep Dive", "Look up", "Latest News".
-    - If the user asks "What is X", just answer it. Do not search.
+**CRITICAL 3D GENERATION RULES:**
+- **IF** user says "generate/make/create a 3D model of [OBJECT]":
+    - **ASSIGN ONLY** "3D_Generator" with prompt = "[OBJECT]" (just the object name, nothing else)
+    - **DO NOT** break this into multiple steps
+    - **DO NOT** ask clarifying questions
+    - **DO NOT** provide a "direct_response" explaining what you're doing
+    - The 3D_Generator handles EVERYTHING: image generation → 3D conversion → hologram display
+    - **Example**: User: "generate a 3d model of a water bottle" → tasks: [{"worker_name": "3D_Generator", "prompt": "water bottle"}]
+
+- **IF** user is REFINING a previous 3D model (e.g., "make it red", "add gold trim"):
+    - **ASSIGN** "3D_Generator" with a COMPLETE rewritten description
+    - **BAD**: "make it red" (no context)
+    - **GOOD**: "red water bottle" (full description)
+
+**RAG Search Rules:**
+- **DO NOT** use "RAG_Search" for general knowledge (e.g., "capital of India", "who is Newton")
+- **ONLY** use "RAG_Search" when user explicitly says: "Research", "Find", "Search", "Deep Dive", "Look up", "Latest News"
+- If user asks "What is X", just answer directly
 
 **Output Format:**
-Return **ONLY** a valid JSON object with this structure:
+Return **ONLY** a valid JSON object:
 {
-  "direct_response": "Your conversational response here (optional if tasks are present, required otherwise)",
+  "direct_response": "Your response (optional if tasks present, required otherwise)",
   "tasks": [
-    { "worker_name": "worker_name_1", "prompt": "specific_instructions_for_worker" }
+    { "worker_name": "worker_name", "prompt": "specific_instructions" }
   ],
   "save_memory": false 
 }
-(Set "save_memory" to true ONLY if the user explicitly asks to SAVE the generated model permanently.)
+(Set "save_memory" to true ONLY if user explicitly asks to SAVE the model permanently.)
 """
 
 
@@ -140,43 +143,36 @@ class GeminiOrchestrator(OrchestratorBase):
         memory.add_message("user", user_prompt)
         
         # --- Pre-Flight Check 1: Force Routing for Obvious 3D Requests ---
-        # The LLM can be inconsistent with "Negative Constraints" (e.g. "Don't use RAG for 'make'").
-        # Enforce hard rule for 3D.
         lower_prompt = user_prompt.lower()
         
-        creation_keywords = ["generate", "make", "create", "model", "render", "change", "turn", "convert"]
-        target_keywords = ["3d", "image", "glb", "mesh", "object", "it", "this", "red", "blue", "green", "gold", "silver", "metal", "texture"]
-        is_creation = any(k in lower_prompt for k in creation_keywords)
-        has_target = any(k in lower_prompt for k in target_keywords)
+        # Simple detection: if user says "generate/make/create" + "3d" or "model"
+        is_3d_request = (
+            ("3d" in lower_prompt or "model" in lower_prompt or "glb" in lower_prompt) and
+            ("generate" in lower_prompt or "make" in lower_prompt or "create" in lower_prompt)
+        )
         
-        # Exclude search triggers from 3D check
-        explicit_search_triggers = ["who", "when", "list of", "history of", "how to"]
-        is_search_phrasing = any(k in lower_prompt for k in explicit_search_triggers)
-
-        if is_creation and has_target and not is_search_phrasing:
-             print(f"[MILES] Pre-Flight: '3D' detected ({user_prompt}). Using Brain to REWRITE prompt only.")
-             
-             # Rewriting logic (same as before)
-             try:
-                 rewrite_prompt = (
-                     f"Rewrite this user request into a single, detailed visual description of the object. "
-                     f"Ignore commands like 'make', 'change', 'generate'. Just describe the final object. "
-                     f"If the user says 'Make it red', describe the previous object but red. "
-                     f"User Request: {user_prompt}"
-                 )
-                 # Use a temporary chat to avoid polluting history with system instructions
-                 # But we pass history to it so it knows context
-                 chat_rewrite = self.model.start_chat(history=history)
-                 response = chat_rewrite.send_message(rewrite_prompt)
-                 refined_prompt = response.text.strip()
-                 print(f"[MILES] Refined Prompt for 3D: '{refined_prompt}'")
-             except Exception as e:
-                 print(f"[MILES] Prompt Rewrite Failed: {e}. Using original.")
-                 refined_prompt = user_prompt
-
-             return OrchestratorPlan(
-                direct_response=f"I'm on it. Generating: {refined_prompt}",
-                tasks=[{"worker_name": "3D_Generator", "prompt": refined_prompt}]
+        if is_3d_request:
+            print(f"[MILES] Pre-Flight: 3D request detected. Extracting object name...")
+            
+            # Extract object name (simple heuristic: words after "of")
+            object_name = user_prompt
+            if " of " in lower_prompt:
+                object_name = user_prompt.split(" of ", 1)[1].strip()
+            elif " a " in lower_prompt:
+                # "generate a red car" -> "red car"
+                parts = user_prompt.lower().split(" a ", 1)
+                if len(parts) > 1:
+                    object_name = parts[1].strip()
+            
+            # Clean up common command words
+            for word in ["3d model", "model", "3d", "generate", "make", "create"]:
+                object_name = object_name.replace(word, "").strip()
+            
+            print(f"[MILES] Extracted object: '{object_name}'")
+            
+            return OrchestratorPlan(
+                direct_response=f"Generating 3D model of: {object_name}",
+                tasks=[{"worker_name": "3D_Generator", "prompt": object_name}]
             )
 
         # --- Pre-Flight Check 2: Direct Chat vs RAG Planner ---
@@ -222,8 +218,7 @@ class GeminiOrchestrator(OrchestratorBase):
                 try:
                     # Provide a simple nudge to answer directly
                     response = chat.send_message(
-                        f"{user_prompt}", 
-                        # No generation_config forcing JSON
+                        f"{user_prompt}\n\nSYSTEM INSTRUCTION:\nYou are the Brain of MILES... (Decompose user requests into tasks. Workers: 3D_Generator, RAG_Search). Output JSON 'OrchestratorPlan' if needed, otherwise plain text."
                     )
                     
                     # Logic to save the model's response to memory

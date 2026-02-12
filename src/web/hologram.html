@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MILES Hologram Display</title>
+    <!-- Model Viewer for easy 3D display -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            /* CRITICAL: Pure black for Pepper's Ghost */
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+            font-family: sans-serif;
+        }
+
+        model-viewer {
+            width: 80%;
+            /* Leave some margin so it doesn't clip in pyramid */
+            height: 80%;
+            /* --poster-color: transparent; */
+        }
+
+        #status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #00ff00;
+            font-size: 12px;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="status">Connecting...</div>
+
+    <div id="overlay"
+        style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:999;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;font-family:sans-serif;text-align:center;">
+        <h1 style="color:#00ff00; text-shadow:0 0 10px #00ff00;">MILES PROTOCOL</h1>
+        <p>Holographic Interface</p>
+        <button id="start-btn"
+            style="padding:15px 30px; font-size:18px; background:transparent; border:2px solid #00ff00; color:#00ff00; margin-top:20px;">INITIALIZE
+            DISPLAY</button>
+    </div>
+
+    <!-- Permanent Fullscreen Toggle (Hidden when active) -->
+    <div id="fs-toggle"
+        style="position:absolute; bottom:20px; right:20px; z-index:100; color:#333; opacity:0.3; font-size:24px; cursor:pointer;">
+        &#x26F6;</div>
+
+    <model-viewer id="hologram" src="" alt="Holographic Model" camera-controls shadow-intensity="1"
+        camera-orbit="0deg 75deg 105%" min-camera-orbit="auto auto auto" max-camera-orbit="auto auto auto"
+        interaction-prompt="none"></model-viewer>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const viewer = document.getElementById('hologram');
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('start-btn');
+        const fsToggle = document.getElementById('fs-toggle');
+
+        // Debug Log (Hidden)
+        function log(msg) {
+            console.log(msg);
+        }
+
+        function enterFullscreen() {
+            const docEl = document.documentElement;
+            if (docEl.requestFullscreen) {
+                docEl.requestFullscreen();
+            } else if (docEl.webkitRequestFullscreen) {
+                docEl.webkitRequestFullscreen();
+            }
+            overlay.style.display = 'none';
+        }
+
+        startBtn.addEventListener('click', enterFullscreen);
+        fsToggle.addEventListener('click', enterFullscreen);
+
+        // --- WebSocket Setup ---
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/hologram/display`;
+
+        let ws;
+
+        // State for smooth interpolation
+        let targetOrbit = { theta: 0, phi: 75, radius: 105 };
+        let currentOrbit = { theta: 0, phi: 75, radius: 105 };
+
+        // Interaction State
+        let isInteracting = false;
+        let lastHandX = 0;
+        let lastPinchState = false;
+
+        // Auto-rotation
+        let autoRotateSpeed = 0.2; // Degrees per frame
+
+        function connect() {
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                log("WS Open - v4.0");
+                statusEl.textContent = "Connected v4";
+                statusEl.style.color = "#00ff00";
+            };
+
+            ws.onmessage = (event) => {
+                // If it starts with {, it's likely JSON command
+                if (typeof event.data === 'string' && event.data.startsWith("{")) {
+                    try {
+                        const cmd = JSON.parse(event.data);
+                        log("CMD: " + cmd.type);
+                        if (cmd.type === 'load_model') {
+                            log("Loading: " + cmd.url);
+                            viewer.src = cmd.url;
+                        } else if (cmd.type === 'status') {
+                            log("STATUS: " + cmd.msg);
+                        }
+                    } catch (e) {
+                        log("Err: " + e.message);
+                    }
+                } else if (typeof event.data === 'string') {
+                    // Hand tracking data (comma separated)
+                    const parts = event.data.split(',');
+                    if (parts.length >= 9) {
+                        handleHandData(parts);
+                    }
+                }
+            };
+
+            ws.onclose = () => {
+                statusEl.textContent = "Disconnected. Retrying...";
+                setTimeout(connect, 2000);
+            };
+        }
+
+        function handleHandData(data) {
+            // Data mapping:
+            // 0: pinch_active (1/0)
+            // 1-3: pinch x,y,z
+            // 5-7: grab x,y,z (Using Hand X)
+
+            const isPinch = parseInt(data[0]) === 1;
+            const broadHandX = parseFloat(data[5]);
+
+            // LOGIC:
+            if (isPinch) {
+                // If just started pinching, reset anchor
+                if (!lastPinchState) {
+                    lastHandX = broadHandX;
+                    log("Pinch Start: " + broadHandX.toFixed(2));
+                }
+
+                // Calculate Delta
+                const deltaX = broadHandX - lastHandX;
+
+                // Increased Sensitivity: 360 degrees per screen width
+                targetOrbit.theta -= deltaX * 360;
+
+                lastHandX = broadHandX;
+                isInteracting = true;
+            } else {
+                if (lastPinchState) log("Pinch Released");
+                isInteracting = false;
+            }
+            lastPinchState = isPinch;
+        }
+
+        // Start Loop
+        connect();
+
+        // ANIMATION LOOP
+        function animate() {
+            // Auto-rotate if not interacting
+            if (!isInteracting) {
+                targetOrbit.theta += autoRotateSpeed;
+            }
+
+            // Smooth lerp for Theta
+            const alpha = 0.1;
+            currentOrbit.theta += (targetOrbit.theta - currentOrbit.theta) * alpha;
+
+            // Apply to viewer
+            viewer.cameraOrbit = `${currentOrbit.theta}deg ${currentOrbit.phi}deg ${currentOrbit.radius}%`;
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start animation immediately
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+
+</html>

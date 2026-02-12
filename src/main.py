@@ -13,6 +13,8 @@ from fastapi.staticfiles import StaticFiles
 
 from contextlib import asynccontextmanager
 from src.api import endpoints as api_router
+from src.api import hologram_websocket
+
 from src.services.sf3d_service import sf3d_service
 
 @asynccontextmanager
@@ -38,6 +40,7 @@ app = FastAPI(
 
 # Include the API router
 app.include_router(api_router.router, prefix="/api/v1")
+app.include_router(hologram_websocket.router)
 
 if WEB_DIR.exists():
     app.mount("/ui", StaticFiles(directory=WEB_DIR, html=True), name="ui")

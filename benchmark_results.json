@@ -1,0 +1,49 @@
+{
+    "orchestrator_latency": [
+        {
+            "query": "Hello there",
+            "duration_sec": 6.073,
+            "plan_type": "Direct/RAG"
+        },
+        {
+            "query": "Make a 3D model of a cybernetic helmet",
+            "duration_sec": 0.0,
+            "plan_type": "3D"
+        },
+        {
+            "query": "What is the stock price of Apple?",
+            "duration_sec": 2.096,
+            "plan_type": "Direct/RAG"
+        },
+        {
+            "query": "Generate a red sports car",
+            "duration_sec": 6.291,
+            "plan_type": "Direct/RAG"
+        },
+        {
+            "query": "Explain quantum physics",
+            "duration_sec": 3.648,
+            "plan_type": "Direct/RAG"
+        }
+    ],
+    "rag_latency": [
+        {
+            "query": "Latest AI news 2024",
+            "duration_sec": 13.72,
+            "result_length": 3657
+        },
+        {
+            "query": "NVIDIA stock price today",
+            "duration_sec": 13.345,
+            "result_length": 2027
+        }
+    ],
+    "3d_generation_latency": [
+        {
+            "prompt": "Health Check",
+            "duration_sec": 0.05,
+            "status": "Service Healthy (Skipped Heavy Render)"
+        }
+    ],
+    "system_cost_metrics": {}
+}
