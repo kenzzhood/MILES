@@ -35,27 +35,16 @@ def generate_3d_model(prompt: str) -> str:
     from ..core.memory import memory
 
     if is_text_prompt:
-        # Check Memory for a previously generated image to use as reference
-        previous_image = None
-        # We search backwards through active session files for a PNG
-        if memory.active_session_files:
-            for f in reversed(memory.active_session_files):
-                if f.lower().endswith(('.png', '.jpg', '.jpeg')):
-                    previous_image = f
-                    break
-        
+        # Always generate a fresh concept image for each new prompt.
+        # Reusing a previous image caused wrong models to appear (e.g. "apple" refining "robot").
+        # Explicit refinement (e.g. "make it red") should be handled by the brain
+        # by rewriting the full description, not by reusing the old image.
         try:
-            if previous_image and os.path.exists(previous_image):
-                print(f"Refining previous image: {os.path.basename(previous_image)}")
-                image_path = image_gen_service.refine_image(previous_image, prompt)
-                print(f"Refined concept saved at: {image_path}")
-            else:
-                print(f"Generating new concept image for: '{prompt}'...")
-                image_path = image_gen_service.generate_image(prompt)
-                print(f"Concept image generated at: {image_path}")
-
+            print(f"Generating new concept image for: '{prompt}'...")
+            image_path = image_gen_service.generate_image(prompt)
+            print(f"Concept image generated at: {image_path}")
         except Exception as e:
-             return f"Error generating concept image: {e}"
+            return f"Error generating concept image: {e}"
 
     if not os.path.exists(image_path):
         return f"Error: Input image not found at '{image_path}'. Please provide a valid file path or text description."
@@ -80,6 +69,32 @@ def generate_3d_model(prompt: str) -> str:
         shutil.copy(glb_path, target_path)
         
         print(f"Model available at: {target_path}")
+        
+        # --- Hologram Display Integration ---
+        # Automatically broadcast to connected hologram displays
+        try:
+            import requests
+            import time as _time
+            broadcast_url = "http://localhost:8001/hologram/broadcast"
+            # Add timestamp cache-buster so the browser always fetches the new model
+            cache_buster = int(_time.time())
+            model_url = f"/models/{filename}?v={cache_buster}"
+            
+            payload = {
+                "type": "load_model",
+                "data": {"url": model_url}
+            }
+            
+            print(f"[HOLOGRAM] Broadcasting model to displays: {model_url}")
+            response = requests.post(broadcast_url, json=payload, timeout=2)
+            
+            if response.status_code == 200:
+                print(f"[HOLOGRAM] ✓ Model sent to display successfully!")
+            else:
+                print(f"[HOLOGRAM] Warning: Broadcast failed ({response.status_code})")
+        except Exception as broadcast_err:
+            # Don't fail the whole task if broadcast fails
+            print(f"[HOLOGRAM] Could not broadcast (display may not be connected): {broadcast_err}")
         
         # Return a rich response with the image and model
         return (

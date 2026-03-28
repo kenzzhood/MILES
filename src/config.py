@@ -21,10 +21,9 @@ BRAIN_MODE = "GEMINI"
 # !! IMPORTANT: Never commit real API keys to Git.
 # !! Use environment variables in a real application.
 # !! For this research prototype, we place it here for simplicity.
-GEMINI_API_KEY = "AIzaSyAjeopVfyu1qlyvxOQYoORVgWASMXMHT3w"
+GEMINI_API_KEY = "AIzaSyCBmmF452HDbORGul3Ld3QHf40pkGFYxO8"
 GEMINI_API_KEYS = [
-    "AIzaSyAjeopVfyu1qlyvxOQYoORVgWASMXMHT3w", # Primary (Good)
-    "AIzaSyBF2qzGeH_yFKGWxOxniiZIrukht10jpEc", # Secondary (Limited)
+    "AIzaSyCBmmF452HDbORGul3Ld3QHf40pkGFYxO8", # Primary (New Key)
 ]
 GEMINI_MODEL_NAME = "models/gemini-flash-latest"
 TAVILY_API_KEY = "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"

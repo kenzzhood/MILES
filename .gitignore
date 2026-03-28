@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.log
+*log.txt
+*.log.*
+debug_output.txt
+verify_output.txt
+verify_rapid_output.txt
 
 # OS
 .DS_Store
@@ -29,10 +35,16 @@ models/*.glb
 *.7z
 *.zip
 temp_install_dir/
-debug_output.txt
-*.log
+
+# Documents & Media (Do not push large assets other than approved ones)
+outputs/
+reports/
+*.mp4
+*.docx
+Gemini_Generated_Image_*.png
+extracted_paper.txt
+benchmark_results.json
 
 # Secrets
 *.key
 .env
-

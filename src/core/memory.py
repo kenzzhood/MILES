@@ -22,9 +22,16 @@ SAVED_MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 class MemoryManager:
     def __init__(self):
         self._ensure_dirs()
+        # Always start fresh — do NOT load old history from disk.
+        # This prevents stale context from previous sessions bleeding into new ones.
         self.history: List[Dict[str, Any]] = []
         self.active_session_files: List[str] = [] # List of file paths generated in this session
-        self._load_memory()
+
+    def clear_history(self):
+        """Clears the in-memory history and wipes the history file on disk."""
+        self.history = []
+        self.save_memory()
+        print("[Memory] History cleared.")
 
     def _ensure_dirs(self):
         os.makedirs(os.path.dirname(MEMORY_FILE), exist_ok=True)

@@ -1,76 +1,779 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MILES Research Chat</title>
-  <link rel="stylesheet" href="/ui/styles.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <title>MILES — Multimodal Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+/* ─────────────────────────────────────────────────────────────────
+   MILES DESIGN SYSTEM — Production v4
+───────────────────────────────────────────────────────────────── */
+:root{
+  --bg:       #060810;
+  --surface:  #0c0f1a;
+  --card:     #10141f;
+  --elevated: #161b2a;
+  --border:   rgba(255,255,255,0.06);
+  --border2:  rgba(255,255,255,0.11);
+  --text:     #e1e7f5;
+  --muted:    #5d6d8a;
+  --dim:      #303a52;
+  --accent:   #4f7eff;
+  --accenthi: #7aa2f7;
+  --glow:     rgba(79,126,255,0.2);
+  --green:    #3ed98a;
+  --yellow:   #f7b955;
+  --red:      #f47c7c;
+  --cyan:     #5bb8f5;
+  --r:        14px;
+  --rs:       8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:-0.01em;
+}
+
+/* ── Ambient backdrop ── */
+.orb{
+  position:fixed;border-radius:50%;pointer-events:none;
+  filter:blur(140px);opacity:0.28;z-index:0;
+}
+.orb1{
+  width:700px;height:700px;
+  background:radial-gradient(circle,#0d3080 0%,transparent 65%);
+  top:-250px;right:-200px;
+  animation:drift1 22s ease-in-out infinite alternate;
+}
+.orb2{
+  width:500px;height:500px;
+  background:radial-gradient(circle,#071a50 0%,transparent 65%);
+  bottom:-180px;left:-120px;
+  animation:drift2 28s ease-in-out infinite alternate;
+}
+@keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,25px) scale(1.05)}}
+@keyframes drift2{from{transform:translate(0,0)}to{transform:translate(-30px,20px)}}
+
+/* fine grid */
+.grid-bg{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 85% 85% at 50% 45%,black 10%,transparent 85%);
+}
+
+/* ── Shell layout ── */
+.shell{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;
+  height:100vh;
+  padding:0 clamp(14px,2.5vw,32px);
+  max-width:1440px;margin:0 auto;
+}
+
+/* ─── TOPBAR ─────────────────────────────────────────────────── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 0;
+  border-bottom:1px solid var(--border);
+  gap:12px;flex-shrink:0;
+}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,#192f7a,#3657d8);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 0 18px rgba(79,126,255,0.35);
+}
+.brand-mark svg{color:#a8c2ff}
+.brand-name{
+  font-size:13px;font-weight:700;
+  letter-spacing:0.12em;text-transform:uppercase;color:var(--text);
+}
+.brand-ver{
+  font-size:10.5px;font-family:'JetBrains Mono',monospace;
+  color:var(--muted);background:var(--elevated);
+  border:1px solid var(--border2);border-radius:99px;
+  padding:2px 9px;
+}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status-pill{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 13px;border-radius:99px;
+  border:1px solid var(--border2);
+  background:var(--surface);font-size:12px;color:var(--muted);
+}
+.dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);box-shadow:0 0 8px var(--green);
+  animation:pulse 2.4s ease-in-out infinite;flex-shrink:0;
+}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--green)}50%{opacity:.6;box-shadow:0 0 16px var(--green)}}
+.badges{display:flex;gap:6px}
+.badge{
+  font-size:11px;font-family:'JetBrains Mono',monospace;
+  padding:3px 10px;border-radius:99px;
+  background:var(--elevated);border:1px solid var(--border2);
+  color:var(--dim);letter-spacing:.03em;
+}
+
+/* ─── MAIN GRID ──────────────────────────────────────────────── */
+.layout{
+  display:grid;
+  grid-template-columns:1fr 320px;
+  gap:14px;
+  flex:1;
+  padding:14px 0 18px;
+  min-height:0;
+  align-items:start;
+}
+
+/* ─── CHAT PANEL ─────────────────────────────────────────────── */
+.chat-col{display:flex;flex-direction:column;height:calc(100vh - 72px)}
+.chat-wrap{
+  display:flex;flex-direction:column;flex:1;min-height:0;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,.5),0 12px 40px rgba(0,0,0,.4);
+}
+.chat-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.panel-lbl{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.09em;
+}
+.panel-lbl svg{color:var(--accent);flex-shrink:0}
+.btn-ghost{
+  display:flex;align-items:center;gap:5px;
+  background:none;border:1px solid var(--border);
+  color:var(--muted);font-size:11.5px;font-family:'Inter',sans-serif;
+  padding:4px 10px;border-radius:6px;cursor:pointer;
+  transition:border-color .2s,color .2s,background .2s;
+}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);background:var(--elevated)}
+
+/* messages */
+.msgs{
+  flex:1;overflow-y:auto;
+  padding:18px 16px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.msgs::-webkit-scrollbar{width:3px}
+.msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+
+/* welcome */
+.welcome{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;text-align:center;gap:10px;padding:40px 20px;
+  animation:fadeIn .5s ease;
+}
+.welcome-ico{
+  width:64px;height:64px;border-radius:16px;
+  background:linear-gradient(135deg,rgba(25,47,122,.65),rgba(54,87,216,.3));
+  border:1px solid rgba(79,126,255,.25);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--accenthi);
+  box-shadow:0 0 40px rgba(79,126,255,.15);
+  margin-bottom:4px;
+}
+.welcome-title{font-size:17px;font-weight:600;color:var(--text)}
+.welcome-sub{font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:6px}
+.chip{
+  background:var(--elevated);border:1px solid var(--border2);
+  color:var(--muted);font-size:12px;font-family:'Inter',sans-serif;
+  padding:6px 14px;border-radius:99px;cursor:pointer;
+  transition:border-color .2s,color .2s,background .2s,transform .15s;
+}
+.chip:hover{
+  border-color:var(--accent);color:var(--accenthi);
+  background:rgba(79,126,255,.1);transform:translateY(-1px);
+}
+
+/* message bubbles */
+.msg{display:flex;flex-direction:column;gap:4px;animation:slideUp .22s ease}
+.msg--user{align-items:flex-end}
+.msg--ai{align-items:flex-start}
+
+.msg__meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim)}
+.msg--user .msg__meta{flex-direction:row-reverse}
+.msg__sender{font-weight:600;color:var(--muted)}
+.msg--user .msg__sender{color:var(--accent)}
+
+.msg__body{
+  max-width:80%;padding:10px 14px;
+  border-radius:12px;font-size:13.5px;line-height:1.68;word-break:break-word;
+}
+.msg--user .msg__body{
+  background:linear-gradient(145deg,#1a2f6e,#1d3a8a);
+  border:1px solid rgba(79,126,255,.3);color:#c8d8ff;
+}
+.msg--ai .msg__body{
+  background:var(--elevated);border:1px solid var(--border);color:var(--text);
+}
+.msg--system .msg__body{
+  background:rgba(244,124,124,.07);border:1px solid rgba(244,124,124,.2);
+  color:var(--red);font-family:'JetBrains Mono',monospace;font-size:12px;
+}
+.msg__body p{margin:0 0 .5em}
+.msg__body p:last-child{margin:0}
+.msg__body code{
+  background:rgba(255,255,255,.09);border-radius:4px;
+  padding:1px 5px;font-family:'JetBrains Mono',monospace;font-size:.82em;
+}
+.msg__body pre{
+  background:rgba(0,0,0,.5);border:1px solid var(--border);
+  border-radius:8px;padding:12px;overflow-x:auto;margin:.5em 0;
+}
+.msg__body pre code{background:none;padding:0}
+.msg__body a{color:var(--accenthi)}
+.msg__body model-viewer{display:block;width:100%;height:260px;border-radius:8px;background:#070a14;margin-top:10px}
+
+/* typing indicator */
+.typing{display:flex;align-items:center;gap:4px;padding:8px 12px;
+  background:var(--elevated);border:1px solid var(--border);border-radius:10px;width:fit-content}
+.typing span{
+  width:6px;height:6px;background:var(--accent);border-radius:50%;
+  animation:bounce 1.2s ease-in-out infinite;
+}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-7px);opacity:1}}
+
+/* input bar */
+.input-bar{padding:12px;border-top:1px solid var(--border);flex-shrink:0}
+.input-wrap{
+  display:flex;align-items:flex-end;gap:8px;
+  background:var(--elevated);border:1px solid var(--border2);
+  border-radius:12px;padding:8px 8px 8px 14px;
+  transition:border-color .2s,box-shadow .2s;
+}
+.input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,126,255,.13)}
+textarea{
+  flex:1;background:none;border:none;outline:none;
+  color:var(--text);font-size:13.5px;font-family:'Inter',sans-serif;
+  resize:none;line-height:1.5;max-height:160px;overflow-y:auto;
+}
+textarea::placeholder{color:var(--dim)}
+.send{
+  width:34px;height:34px;border-radius:8px;flex-shrink:0;
+  background:linear-gradient(135deg,#2550bb,#3b82f6);
+  border:none;color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s,transform .15s,box-shadow .2s;
+}
+.send:hover{background:linear-gradient(135deg,#3060d0,#60a5fa);transform:scale(1.06);box-shadow:0 4px 16px rgba(79,126,255,.4)}
+.send:disabled{opacity:.4;transform:none;cursor:not-allowed}
+.input-hint{font-size:10.5px;color:var(--dim);text-align:right;margin-top:5px;padding-right:2px}
+
+/* ─── DASHBOARD COLUMN ───────────────────────────────────────── */
+.dash-col{
+  display:flex;flex-direction:column;gap:12px;
+  position:sticky;top:14px;
+  max-height:calc(100vh - 88px);overflow-y:auto;
+}
+.dash-col::-webkit-scrollbar{width:0}
+
+.panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,.4),0 8px 32px rgba(0,0,0,.35);
+}
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid var(--border);
+}
+.panel-cnt{
+  font-size:10.5px;font-family:'JetBrains Mono',monospace;
+  background:var(--elevated);border:1px solid var(--border2);
+  border-radius:99px;padding:2px 9px;color:var(--dim);
+}
+
+/* plan list */
+#plan-list{list-style:none;max-height:200px;overflow-y:auto}
+#plan-list::-webkit-scrollbar{width:2px}
+#plan-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+.plan-empty,.tasks-empty{
+  font-size:12px;color:var(--dim);padding:14px 16px;
+  text-align:center;font-style:italic;
+}
+#plan-list li{
+  padding:9px 14px;font-size:12.5px;
+  border-bottom:1px solid var(--border);
+  display:grid;grid-template-columns:20px 1fr;gap:10px;align-items:start;
+  transition:background .15s;
+}
+#plan-list li:last-child{border-bottom:none}
+#plan-list li:hover{background:var(--elevated)}
+.step-num{
+  width:20px;height:20px;border-radius:50%;flex-shrink:0;margin-top:1px;
+  background:linear-gradient(135deg,#192f7a,#3b82f6);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#a8c2ff;
+}
+.step-info strong{display:block;font-size:12px;color:var(--text);font-weight:600;margin-bottom:2px}
+.step-info span{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+/* tasks list */
+#tasks-list{display:flex;flex-direction:column;max-height:280px;overflow-y:auto}
+#tasks-list::-webkit-scrollbar{width:2px}
+#tasks-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+.task-card{
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  animation:slideUp .2s ease;
+}
+.task-card:last-child{border-bottom:none}
+.task-card__top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.task-worker{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:2px}
+.task-prompt{
+  font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;
+}
+.task-status{
+  font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;
+  border:1px solid transparent;white-space:nowrap;flex-shrink:0;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.task-status[data-status=PENDING]{color:var(--yellow);background:rgba(247,185,85,.08);border-color:rgba(247,185,85,.25)}
+.task-status[data-status=STARTED]{color:var(--cyan);background:rgba(91,184,245,.08);border-color:rgba(91,184,245,.25);animation:blink 1.4s ease-in-out infinite}
+.task-status[data-status=SUCCESS]{color:var(--green);background:rgba(62,217,138,.08);border-color:rgba(62,217,138,.25)}
+.task-status[data-status=FAILURE]{color:var(--red);background:rgba(244,124,124,.08);border-color:rgba(244,124,124,.25)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.45}}
+.task-result{margin-top:6px;font-size:12px;color:var(--muted)}
+.task-result:empty{display:none}
+.task-result model-viewer{display:block;width:100%;height:200px;border-radius:8px;background:#070a14;margin-top:6px}
+
+/* system grid */
+.sys-grid{display:grid;grid-template-columns:1fr 1fr}
+.sys-item{
+  padding:8px 14px;border-bottom:1px solid var(--border);
+  border-right:1px solid var(--border);display:flex;flex-direction:column;gap:3px;
+}
+.sys-item:nth-child(2n){border-right:none}
+.sys-item:nth-last-child(-n+2){border-bottom:none}
+.sys-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);font-weight:600}
+.sys-val{font-size:11.5px;font-family:'JetBrains Mono',monospace;color:var(--muted)}
+.sys-val--on{color:var(--green)}
+
+/* ── Animations ── */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Responsive ── */
+@media(max-width:880px){
+  html,body{overflow:auto}
+  .layout{grid-template-columns:1fr;overflow:visible}
+  .chat-col{height:auto}
+  .chat-wrap{height:70vh}
+  .dash-col{position:static;max-height:none;flex-direction:row;overflow-x:auto}
+  .panel{min-width:260px;flex-shrink:0}
+}
+@media(max-width:560px){
+  .badges{display:none}
+  .dash-col{flex-direction:column}
+  .panel{min-width:0}
+}
+  </style>
 </head>
-
 <body>
-  <main class="app-shell">
-    <section class="hero">
-      <div>
-        <h1>MILES – Multimodal Intelligent Assistant</h1>
-        <p class="tagline">
-          Chat with the orchestration layer and watch how tasks flow to the specialist
-          workers (RAG, 3D generation, etc.).
-        </p>
+
+<!-- Ambient BG -->
+<div class="orb orb1" aria-hidden="true"></div>
+<div class="orb orb2" aria-hidden="true"></div>
+<div class="grid-bg" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <!-- ── TOPBAR ── -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <polygon points="9,1.5 16.5,5.5 16.5,12.5 9,16.5 1.5,12.5 1.5,5.5" stroke="currentColor" stroke-width="1.4" fill="none"/>
+          <circle cx="9" cy="9" r="2.8" fill="currentColor"/>
+        </svg>
       </div>
-      <div class="status">
+      <span class="brand-name">MILES</span>
+      <span class="brand-ver">v2.0</span>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill">
         <span class="dot"></span>
-        <span>FastAPI · Celery · Redis · Gemini</span>
+        <span id="status-text">Connected</span>
       </div>
-    </section>
+      <div class="badges">
+        <span class="badge">Gemini</span>
+        <span class="badge">Celery</span>
+        <span class="badge">Redis</span>
+      </div>
+    </div>
+  </header>
 
-    <section class="chat-card">
-      <form id="chat-form">
-        <label for="prompt-input">Enter your research / generation prompt</label>
-        <div class="input-row">
-          <textarea id="prompt-input" placeholder="e.g. Research holographic gesture capture pipelines."></textarea>
-          <button type="submit">Send</button>
+  <!-- ── MAIN GRID ── -->
+  <div class="layout">
+
+    <!-- LEFT: Chat -->
+    <div class="chat-col">
+      <div class="chat-wrap" id="chat-wrap">
+        <!-- Chat header -->
+        <div class="chat-head">
+          <div class="panel-lbl">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M1.5 2.5h10v6.5a1 1 0 01-1 1h-4l-3 1.5V9.5H2.5a1 1 0 01-1-1V2.5z" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+            Session
+          </div>
+          <button class="btn-ghost" id="btn-clear">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 3h9M4 3V2a.5.5 0 01.5-.5h3a.5.5 0 01.5.5v1M4.5 5v4M7.5 5v4M2.5 3l.65 6.5a.5.5 0 00.5.5h4.7a.5.5 0 00.5-.5L9.5 3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Clear
+          </button>
         </div>
-      </form>
 
-      <div id="messages" class="messages" aria-live="polite"></div>
-    </section>
+        <!-- Messages -->
+        <div class="msgs" id="messages">
+          <div class="welcome" id="welcome-state">
+            <div class="welcome-ico">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <polygon points="14,2 25,8 25,20 14,26 3,20 3,8" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".65"/>
+                <circle cx="14" cy="14" r="4" fill="currentColor" opacity=".85"/>
+              </svg>
+            </div>
+            <p class="welcome-title">MILES is Online</p>
+            <p class="welcome-sub">Ask me anything or request a 3D hologram</p>
+            <div class="chips">
+              <button class="chip" data-prompt="What can you do?">What can you do?</button>
+              <button class="chip" data-prompt="Generate a 3D model of a red apple">Generate a 3D model</button>
+              <button class="chip" data-prompt="conduct a research on latest AI chips">Research latest AI</button>
+            </div>
+          </div>
+        </div>
 
-    <section class="dashboard">
-      <div class="panel">
-        <h2>Orchestrator Plan (Chain-of-Thought)</h2>
-        <ul id="plan-list"></ul>
+        <!-- Input -->
+        <form class="input-bar" id="chat-form" autocomplete="off">
+          <div class="input-wrap">
+            <textarea id="prompt-input" rows="1" placeholder="Ask MILES anything…" aria-label="Message input"></textarea>
+            <button type="submit" class="send" id="send-btn" aria-label="Send">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M13 7.5L2 2.5l3 5-3 5L13 7.5z" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+          <div class="input-hint">Enter to send · Shift+Enter for newline</div>
+        </form>
       </div>
+    </div>
+
+    <!-- RIGHT: Dashboard -->
+    <div class="dash-col">
+
+      <!-- Orchestrator Plan -->
       <div class="panel">
-        <h2>Worker Tasks</h2>
-        <div id="tasks-list" class="tasks"></div>
+        <div class="panel-head">
+          <div class="panel-lbl">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M1.5 2.5h10M1.5 6.5h7M1.5 10.5h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            Plan
+          </div>
+          <span class="panel-cnt" id="plan-count">—</span>
+        </div>
+        <ol id="plan-list">
+          <li class="plan-empty" style="grid-column:1/-1">No plan yet</li>
+        </ol>
       </div>
-    </section>
-  </main>
 
-  <template id="message-template">
-    <article class="message">
-      <header>
-        <strong class="sender"></strong>
-        <span class="timestamp"></span>
-      </header>
-      <p class="body"></p>
-    </article>
-  </template>
+      <!-- Worker Tasks -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-lbl">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M3.5 6.5l2 2 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Workers
+          </div>
+          <span class="panel-cnt" id="tasks-count">—</span>
+        </div>
+        <div id="tasks-list"><div class="tasks-empty">No tasks running</div></div>
+      </div>
 
-  <template id="task-template">
-    <div class="task">
+      <!-- System status -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-lbl">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M6.5 5v3.5M6.5 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            System
+          </div>
+        </div>
+        <div class="sys-grid">
+          <div class="sys-item"><span class="sys-lbl">Brain</span><span class="sys-val sys-val--on">Gemini Flash</span></div>
+          <div class="sys-item"><span class="sys-lbl">Workers</span><span class="sys-val sys-val--on">Online</span></div>
+          <div class="sys-item"><span class="sys-lbl">Queue</span><span class="sys-val sys-val--on">Redis</span></div>
+          <div class="sys-item"><span class="sys-lbl">Render</span><span class="sys-val sys-val--on">SF3D</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Templates ── -->
+<template id="message-template">
+  <article class="msg">
+    <div class="msg__meta">
+      <span class="message__sender msg__sender"></span>
+      <span class="message__time msg__time"></span>
+    </div>
+    <div class="message__body msg__body"></div>
+  </article>
+</template>
+
+<template id="task-template">
+  <div class="task-card">
+    <div class="task-card__top">
       <div>
         <h3 class="task-worker"></h3>
         <p class="task-prompt"></p>
       </div>
-      <div class="task-status"></div>
+      <span class="task-status"></span>
     </div>
-  </template>
+    <div class="task-result task-card__result"></div>
+  </div>
+</template>
 
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="/ui/app.js?v=debug2" defer></script>
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+<script>
+/* ── App Logic ──────────────────────────────────────────────── */
+'use strict';
+
+const chatForm    = document.getElementById('chat-form');
+const promptInput = document.getElementById('prompt-input');
+const sendBtn     = document.getElementById('send-btn');
+const messagesEl  = document.getElementById('messages');
+const welcome     = document.getElementById('welcome-state');
+const planList    = document.getElementById('plan-list');
+const planCount   = document.getElementById('plan-count');
+const tasksList   = document.getElementById('tasks-list');
+const tasksCount  = document.getElementById('tasks-count');
+const btnClear    = document.getElementById('btn-clear');
+const msgTmpl     = document.getElementById('message-template');
+const taskTmpl    = document.getElementById('task-template');
+
+const streams     = new Map();
+let   numTasks    = 0;
+let   typingEl    = null;
+let   welcomeGone = false;
+
+// ── Auto-resize textarea
+promptInput.addEventListener('input', () => {
+  promptInput.style.height = 'auto';
+  promptInput.style.height = Math.min(promptInput.scrollHeight, 160) + 'px';
+});
+
+// ── Enter = send
+promptInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    chatForm.dispatchEvent(new SubmitEvent('submit', {bubbles:true, cancelable:true}));
+  }
+});
+
+// ── Suggestion chips
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', () => {
+    promptInput.value = c.dataset.prompt;
+    promptInput.dispatchEvent(new Event('input'));
+    chatForm.dispatchEvent(new SubmitEvent('submit', {bubbles:true, cancelable:true}));
+  });
+});
+
+// ── Clear
+btnClear.addEventListener('click', () => {
+  streams.forEach(s => s.close()); streams.clear();
+  messagesEl.innerHTML = '';
+  welcome.style.display = ''; welcomeGone = false;
+  messagesEl.appendChild(welcome);
+  planList.innerHTML = '<li class="plan-empty" style="grid-column:1/-1">No plan yet</li>';
+  planCount.textContent = '—';
+  tasksList.innerHTML = '<div class="tasks-empty">No tasks running</div>';
+  tasksCount.textContent = '—'; numTasks = 0;
+});
+
+// ── Helpers
+function hideWelcome() {
+  if (!welcomeGone && welcome.parentNode === messagesEl) {
+    welcome.style.display = 'none'; welcomeGone = true;
+  }
+}
+function scroll() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+function showTyping() {
+  if (typingEl) return;
+  const w = document.createElement('div');
+  w.className = 'msg msg--ai';
+  w.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  typingEl = w; messagesEl.appendChild(w); scroll();
+}
+function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+
+function mkViewer(url) {
+  const v = document.createElement('model-viewer');
+  v.src = url;
+  ['camera-controls','auto-rotate'].forEach(a => v.setAttribute(a,''));
+  v.setAttribute('shadow-intensity','1');
+  v.setAttribute('environment-image','neutral');
+  v.setAttribute('exposure','1');
+  return v;
+}
+
+function addMessage(sender, text, role='ai') {
+  hideWelcome(); hideTyping();
+  const node = msgTmpl.content.firstElementChild.cloneNode(true);
+  node.classList.add('msg--' + role);
+  node.querySelector('.msg__sender').textContent  = sender;
+  node.querySelector('.msg__time').textContent    = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const body = node.querySelector('.msg__body');
+  const txt  = String(text || '');
+  body.innerHTML = (window.marked) ? marked.parse(txt) : txt.replace(/\n/g,'<br>');
+  const glb = txt.match(/\/models\/[\w\-.%]+\.glb(\?[^\s)"'\]]*)?/);
+  if (glb) body.appendChild(mkViewer(glb[0]));
+  messagesEl.appendChild(node); scroll();
+}
+
+// ── Plan render
+function renderPlan(tasks) {
+  planList.innerHTML = '';
+  if (!tasks || !tasks.length) {
+    planList.innerHTML = '<li class="plan-empty" style="grid-column:1/-1">Direct response</li>';
+    planCount.textContent = '0'; return;
+  }
+  planCount.textContent = tasks.length;
+  tasks.forEach((t, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<div class="step-num">${i+1}</div><div class="step-info"><strong>${esc(t.worker_name)}</strong><span>${esc(t.prompt)}</span></div>`;
+    planList.appendChild(li);
+  });
+}
+
+// ── Task cards
+function getOrMakeCard(taskId, worker, prompt) {
+  let card = tasksList.querySelector(`[data-task-id="${CSS.escape(taskId)}"]`);
+  if (card) return card;
+  const empty = tasksList.querySelector('.tasks-empty');
+  if (empty) empty.remove();
+  card = taskTmpl.content.firstElementChild.cloneNode(true);
+  card.dataset.taskId = taskId;
+  card.querySelector('.task-worker').textContent = worker;
+  card.querySelector('.task-prompt').textContent = prompt;
+  tasksList.appendChild(card);
+  numTasks++; tasksCount.textContent = numTasks;
+  return card;
+}
+
+function setTaskStatus(taskId, status, resultText) {
+  const card = tasksList.querySelector(`[data-task-id="${CSS.escape(taskId)}"]`);
+  if (!card) return;
+  const s = card.querySelector('.task-status');
+  s.dataset.status = status; s.textContent = status;
+  if ((status === 'SUCCESS' || status === 'FAILURE') && resultText) {
+    const r = card.querySelector('.task-result');
+    r.innerHTML = '';
+    if (status === 'SUCCESS') {
+      const d = document.createElement('div');
+      d.style.cssText = 'font-size:12px;color:var(--muted);margin-top:4px';
+      d.innerHTML = window.marked ? marked.parse(String(resultText)) : esc(String(resultText));
+      r.appendChild(d);
+      const glb = resultText.match(/\/models\/[\w\-.%]+\.glb(\?[^\s)"'\]]*)?/);
+      if (glb) r.appendChild(mkViewer(glb[0]));
+    } else {
+      r.innerHTML = `<span style="color:var(--red);font-size:11px">${esc(String(resultText))}</span>`;
+    }
+  }
+}
+
+function subscribeTask(taskId, worker, prompt) {
+  getOrMakeCard(taskId, worker, prompt);
+  setTaskStatus(taskId, 'PENDING');
+  const es = new EventSource(`/api/v1/stream/${encodeURIComponent(taskId)}`);
+  streams.set(taskId, es);
+  es.onmessage = e => {
+    try {
+      const p = JSON.parse(e.data);
+      setTaskStatus(taskId, p.status, p.result);
+      if (p.status === 'SUCCESS' || p.status === 'FAILURE') {
+        es.close(); streams.delete(taskId);
+        addMessage(worker, p.result || `Task ${p.status}`, p.status === 'FAILURE' ? 'system' : 'ai');
+      }
+    } catch(err) { console.error('[MILES] SSE parse error', err); }
+  };
+  es.onerror = () => {
+    es.close(); streams.delete(taskId);
+    setTaskStatus(taskId, 'FAILURE', 'Connection lost.');
+  };
+}
+
+// ── Submit
+chatForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const prompt = promptInput.value.trim();
+  if (!prompt) return;
+  addMessage('You', prompt, 'user');
+  promptInput.value = ''; promptInput.style.height = 'auto';
+  sendBtn.disabled = true; showTyping();
+
+  try {
+    const res = await fetch('/api/v1/interact', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({prompt})
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+    const data  = await res.json();
+    const tasks = data.plan?.tasks ?? [];
+    renderPlan(tasks);
+    if (data.direct_response) addMessage('MILES', data.direct_response, 'ai');
+    if (tasks.length) {
+      tasks.forEach((t,i) => {
+        const id = data.task_ids?.[i];
+        if (id) subscribeTask(id, t.worker_name, t.prompt);
+      });
+    } else if (!data.direct_response) {
+      addMessage('MILES', 'No response generated.', 'ai');
+    }
+  } catch(err) {
+    console.error('[MILES]', err);
+    hideTyping();
+    addMessage('System', err.message, 'system');
+  } finally {
+    sendBtn.disabled = false; promptInput.focus();
+  }
+});
+
+window.addEventListener('beforeunload', () => { streams.forEach(s => s.close()); });
+
+function esc(s) {
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+</script>
 </body>
-
 </html>

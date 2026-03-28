@@ -1,10 +1,14 @@
 """
-Gemini (Online API) Orchestrator Implementation.
+Gemini (Online API) Orchestrator — Production v3.1
+Clean routing: deterministic pre-flight for 3D + strict keyword gate for RAG.
+ALL chat goes through JSON mode so there's never raw JSON in the UI.
+History is NOT sent to the JSON planner (avoids re-running old plans).
 """
 
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import google.generativeai as genai
@@ -13,293 +17,211 @@ from .orchestrator import OrchestratorBase
 from ..core.schemas import OrchestratorPlan
 import time
 
-# This is the "System Prompt" that teaches the LLM how to be our Orchestrator.
-# It uses Chain-of-Thought principles to force structured, decomposed output.
-# This is the "System Prompt" that teaches the LLM how to be our Orchestrator.
-# It uses Chain-of-Thought principles to force structured, decomposed output.
+
 ORCHESTRATOR_SYSTEM_PROMPT = """
-You are "MILES", a highly intelligent, conversational AI assistant.
-Your goal is to help the user with their requests efficiently.
+You are "MILES", a conversational AI assistant. Reply naturally and helpfully.
 
-**Core Capabilities:**
-1.  **Direct Conversation:** You can answer questions, write code, explain concepts, and chat normally.
-2.  **Task Delegation:** You have access to specialist workers for heavy or specific tasks.
+You have two specialist workers available:
+- "3D_Generator": Generates a 3D model from a text description. Use ONLY when user explicitly asks to generate/create/make a 3D model.
+- "RAG_Search": Performs a web search. Use ONLY when user explicitly uses words like "research", "search for", "look up", "find me news about", "latest", etc.
 
-**Available Workers:**
-- "3D_Generator": **COMPLETE 3D PIPELINE** - Generates image from text AND converts to 3D model. Use when user wants a 3D model of ANY object.
-- "RAG_Search": Performs a deep web search for factual information. Use this ONLY when you need up-to-date external information that you don't have.
+For ALL other requests (greetings, factual questions, general chat, explanations):
+- Answer directly in "direct_response"
+- Leave "tasks" as an empty list []
+- NEVER use workers for general knowledge questions
 
-**CRITICAL 3D GENERATION RULES:**
-- **IF** user says "generate/make/create a 3D model of [OBJECT]":
-    - **ASSIGN ONLY** "3D_Generator" with prompt = "[OBJECT]" (just the object name, nothing else)
-    - **DO NOT** break this into multiple steps
-    - **DO NOT** ask clarifying questions
-    - **DO NOT** provide a "direct_response" explaining what you're doing
-    - The 3D_Generator handles EVERYTHING: image generation → 3D conversion → hologram display
-    - **Example**: User: "generate a 3d model of a water bottle" → tasks: [{"worker_name": "3D_Generator", "prompt": "water bottle"}]
-
-- **IF** user is REFINING a previous 3D model (e.g., "make it red", "add gold trim"):
-    - **ASSIGN** "3D_Generator" with a COMPLETE rewritten description
-    - **BAD**: "make it red" (no context)
-    - **GOOD**: "red water bottle" (full description)
-
-**RAG Search Rules:**
-- **DO NOT** use "RAG_Search" for general knowledge (e.g., "capital of India", "who is Newton")
-- **ONLY** use "RAG_Search" when user explicitly says: "Research", "Find", "Search", "Deep Dive", "Look up", "Latest News"
-- If user asks "What is X", just answer directly
-
-**Output Format:**
-Return **ONLY** a valid JSON object:
+Always return ONLY valid JSON in this exact format:
 {
-  "direct_response": "Your response (optional if tasks present, required otherwise)",
-  "tasks": [
-    { "worker_name": "worker_name", "prompt": "specific_instructions" }
-  ],
-  "save_memory": false 
+  "direct_response": "Your plain text answer here, or null if you are dispatching a task",
+  "tasks": []
 }
-(Set "save_memory" to true ONLY if user explicitly asks to SAVE the model permanently.)
+
+RULES:
+- "direct_response" must be a plain human-readable string, NEVER JSON
+- Do NOT dispatch workers for greetings, simple questions, facts, or explanations
+- Do NOT add tasks when answering a direct question
 """
 
 
 class GeminiOrchestrator(OrchestratorBase):
-    """
-    Orchestrator "brain" powered by the Gemini 1.5 Pro API.
-    This provides maximum speed and reasoning power for development.
-    """
 
     def __init__(self, api_keys: list[str] = None, model_name: str = "models/gemini-flash-latest"):
         from .. import config
-        
-        # Robust Key Loading: Combine args, config list, and single config
+
         keys = []
-        if api_keys: keys.extend(api_keys)
-        if config.GEMINI_API_KEYS: keys.extend(config.GEMINI_API_KEYS)
-        if config.GEMINI_API_KEY: keys.append(config.GEMINI_API_KEY)
-        
-        # Deduplicate while preserving order
+        if api_keys:
+            keys.extend(api_keys)
+        if config.GEMINI_API_KEYS:
+            keys.extend(config.GEMINI_API_KEYS)
+        if config.GEMINI_API_KEY:
+            keys.append(config.GEMINI_API_KEY)
+
         self.api_keys = list(dict.fromkeys(keys))
-        
-        # Remove placeholders or empty strings
         self.api_keys = [k for k in self.api_keys if k and "YOUR_GEMINI" not in k]
 
         if not self.api_keys:
-             raise ValueError("No valid GEMINI_API_KEYS found in config!")
+            raise ValueError("No valid GEMINI_API_KEYS found in config!")
 
         self.current_key_index = 0
         self.model_name = model_name
         self._configure_brain()
 
     def _configure_brain(self):
-        """Initializes the Brain with the current key."""
         current_key = self.api_keys[self.current_key_index]
-        try:
-            genai.configure(api_key=current_key)
-            self.model = genai.GenerativeModel(self.model_name)
-            print(f"[MILES] Brain Online (v2.0 - Strict Chat Mode): Using Google {self.model_name} (Key Index: {self.current_key_index})")
-        except Exception as exc:
-            print(f"Error initializing Gemini: {exc}")
-            raise
-    
-    def _rotate_key(self):
-        """Switches to the next API key in the list."""
+        genai.configure(api_key=current_key)
+        self.model = genai.GenerativeModel(
+            self.model_name,
+            system_instruction=ORCHESTRATOR_SYSTEM_PROMPT
+        )
+        print(f"[MILES] Brain Online (v3.1): {self.model_name} (Key {self.current_key_index})")
+
+    def _rotate_key(self) -> bool:
         if len(self.api_keys) <= 1:
-            print("[MILES] Only one key configured. Cannot rotate.")
             return False
-            
-        print(f"[MILES] Rate Limit Hit. Rotating Key (Cooling down for 2s)...")
-        time.sleep(2) # Backoff to let the API breathe
-        
+        time.sleep(2)
         self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
-        print(f"[MILES] Rotation: Switching to Key Index {self.current_key_index}...")
         self._configure_brain()
         return True
 
-    def decompose_task(self, user_prompt: str) -> OrchestratorPlan:
-        """
-        Analyzes the user's prompt and decides whether to answer directly,
-        delegate to workers, or both.
-        """
+    # ── Deterministic 3D pre-flight ──────────────────────────────────────────
+    _3D_VERBS = {"generate", "make", "create", "build", "produce", "render"}
+    _3D_NOUNS = {"3d", "model", "glb", "mesh", "hologram"}
 
-        print(f"Sending to Gemini: {user_prompt}")
-        
-        # Load history from MemoryManager
-        from ..core.memory import memory
-        history = memory.get_history()
-        
-        # Prepend system prompt if history is empty or just to be safe
-        # (Gemini API handles system instructions differently in newer versions, 
-        # but putting it as the first user message is a robust pattern for now)
-        if not history:
-             history = [{"role": "user", "parts": [ORCHESTRATOR_SYSTEM_PROMPT]}]
+    def _is_3d_request(self, prompt: str) -> bool:
+        words = set(prompt.lower().split())
+        return bool(words & self._3D_VERBS) and bool(words & self._3D_NOUNS)
+
+    def _extract_object_name(self, prompt: str) -> str:
+        lower = prompt.lower()
+        m = re.search(r'\bof\s+(?:a\s+|an\s+)?(.+)', lower)
+        if m:
+            obj = m.group(1).strip()
         else:
-             # Ensure the system prompt is always known. 
-             # We can't easily insert it at index 0 if the chat is long, but we can append a reminder
-             # or rely on the fine-tuned instruction following.
-             # Better: Just pass it in the `system_instruction` argument if supported, 
-             # but here we follow the existing pattern.
-             pass
+            obj = lower
+            for word in ["generate", "make", "create", "build", "produce", "render",
+                         "3d model", "3d", "model", "glb", "me", "a", "an", "the"]:
+                obj = obj.replace(word, " ")
+            obj = " ".join(obj.split())
+        return obj.rstrip(".,!?") or prompt
 
-        # Update memory with the new user prompt (so we remember it for next time)
-        memory.add_message("user", user_prompt)
-        
-        # --- Pre-Flight Check 1: Force Routing for Obvious 3D Requests ---
-        lower_prompt = user_prompt.lower()
-        
-        # Simple detection: if user says "generate/make/create" + "3d" or "model"
-        is_3d_request = (
-            ("3d" in lower_prompt or "model" in lower_prompt or "glb" in lower_prompt) and
-            ("generate" in lower_prompt or "make" in lower_prompt or "create" in lower_prompt)
-        )
-        
-        if is_3d_request:
-            print(f"[MILES] Pre-Flight: 3D request detected. Extracting object name...")
-            
-            # Extract object name (simple heuristic: words after "of")
-            object_name = user_prompt
-            if " of " in lower_prompt:
-                object_name = user_prompt.split(" of ", 1)[1].strip()
-            elif " a " in lower_prompt:
-                # "generate a red car" -> "red car"
-                parts = user_prompt.lower().split(" a ", 1)
-                if len(parts) > 1:
-                    object_name = parts[1].strip()
-            
-            # Clean up common command words
-            for word in ["3d model", "model", "3d", "generate", "make", "create"]:
-                object_name = object_name.replace(word, "").strip()
-            
-            print(f"[MILES] Extracted object: '{object_name}'")
-            
+    # ── Deterministic RAG pre-flight ─────────────────────────────────────────
+    # Only explicit search phrasing triggers RAG — not just the word "research" alone
+    _RAG_PATTERNS = [
+        r'\bsearch\s+(for|about|on)\b',
+        r'\blook\s+up\b',
+        r'\bfind\s+(me\s+)?(news|info|information|latest)\b',
+        r'\bconduct\s+a?\s*research\b',
+        r'\bdo\s+a?\s*research\b',
+        r'\bweb\s+search\b',
+        r'\blatest\s+news\b',
+    ]
+
+    def _is_rag_request(self, prompt: str) -> bool:
+        lower = prompt.lower()
+        return any(re.search(pat, lower) for pat in self._RAG_PATTERNS)
+
+    def _extract_rag_query(self, prompt: str) -> str:
+        """Strip command words from RAG prompt to get the search query."""
+        lower = prompt.lower()
+        # Remove all trigger phrases
+        for pat in [r'conduct\s+a?\s*research\s+(on\s+)?', r'do\s+a?\s*research\s+(on\s+)?',
+                    r'search\s+(for|about|on)\s+', r'look\s+up\s+', r'find\s+(me\s+)?',
+                    r'web\s+search\s+(for\s+)?', r'latest\s+news\s+(on\s+|about\s+)?']:
+            lower = re.sub(pat, '', lower)
+        return lower.strip() or prompt
+
+    # ── Main entry point ─────────────────────────────────────────────────────
+    def decompose_task(self, user_prompt: str) -> OrchestratorPlan:
+        print(f"[MILES] Received: '{user_prompt}'")
+
+        # 1. Deterministic 3D route — no LLM needed
+        if self._is_3d_request(user_prompt):
+            obj = self._extract_object_name(user_prompt)
+            print(f"[MILES] → 3D route: '{obj}'")
             return OrchestratorPlan(
-                direct_response=f"Generating 3D model of: {object_name}",
-                tasks=[{"worker_name": "3D_Generator", "prompt": object_name}]
+                direct_response=None,
+                tasks=[{"worker_name": "3D_Generator", "prompt": obj}]
             )
 
-        # --- Pre-Flight Check 2: Direct Chat vs RAG Planner ---
-        # If the user is NOT asking for 3D, are they asking for SEARCH?
-        # If NOT search, we should just answer directly and skip the complex JSON planning overhead.
-        
-        search_intent_keywords = [
-            "search", "find", "research", "lookup", "look up", 
-            "news", "latest", "stock", "price", "weather", 
-            "current", "live", "web", "internet", "google"
-        ]
-        
-        
-        # DEBUG: Find out WHAT matches
-        matched_keywords = [k for k in search_intent_keywords if k in lower_prompt]
-        is_explicit_search = len(matched_keywords) > 0
-        
-        from .. import config
-        import importlib
-        importlib.reload(config)
-        self.api_keys = config.GEMINI_API_KEYS or [config.GEMINI_API_KEY]
-        
-        # --- HARD OVERRIDE for Greetings ---
-        # Using 'in' instead of '==' to catch "hi.", "hi!", "hi there"
-        if any(w in lower_prompt for w in ["hi", "hello", "hey", "test", "help"]):
-            print(f"[DEBUG_BRAIN] Greeting detected. Forcing Direct Chat.")
-            is_explicit_search = False
+        # 2. Deterministic RAG route — explicit search command only
+        if self._is_rag_request(user_prompt):
+            query = self._extract_rag_query(user_prompt)
+            print(f"[MILES] → RAG route: '{query}'")
+            return OrchestratorPlan(
+                direct_response=None,
+                tasks=[{"worker_name": "RAG_Search", "prompt": query}]
+            )
 
-        print(f"[DEBUG_BRAIN] Prompt: '{user_prompt}'")
-        print(f"[DEBUG_BRAIN] Keywords Matched: {matched_keywords}")
-        print(f"[DEBUG_BRAIN] Search Mode: {is_explicit_search}")
-        
-        # If it's not 3D and NOT explicit search, treat as "Direct Conversation"
-        # This prevents "Capital of India" -> RAG.
-        if not is_explicit_search:
-            print(f"[DEBUG_BRAIN] Routing to Direct Chat...")
-            
-            chat = self.model.start_chat(history=history)
-            
-            # Use Direct Text Mode (No JSON enforcement)
-            max_retries = len(self.api_keys) + 1
-            for attempt in range(max_retries):
-                try:
-                    # Provide a simple nudge to answer directly
-                    response = chat.send_message(
-                        f"{user_prompt}\n\nSYSTEM INSTRUCTION:\nYou are the Brain of MILES... (Decompose user requests into tasks. Workers: 3D_Generator, RAG_Search). Output JSON 'OrchestratorPlan' if needed, otherwise plain text."
-                    )
-                    
-                    # Logic to save the model's response to memory
-                    memory.add_message("model", response.text)
-                    
-                    return OrchestratorPlan(
-                        direct_response=response.text,
-                        tasks=[]
-                    )
-                except Exception as e:
-                    is_rate_limit = "429" in str(e) or "ResourceExhausted" in str(e)
-                    if is_rate_limit:
-                         print(f"[MILES] Rate Limit in Direct Chat. Rotating...")
-                         if self._rotate_key():
-                             # Re-instantiate chat with new model/key
-                             chat = self.model.start_chat(history=history)
-                             continue 
-                    print(f"[MILES] Direct Chat Failed: {e}")
-                    # If direct chat fails drastically, return a safe error
-                    return OrchestratorPlan(direct_response="I'm having trouble connecting to my brain right now (Rate Limit or Error).", tasks=[])
+        # 3. Everything else → Gemini direct chat (JSON mode, NO history to avoid re-planning)
+        print(f"[MILES] → Direct chat")
+        raw = self._call_gemini_json(user_prompt)
+        if raw is None:
+            return OrchestratorPlan(
+                direct_response="I'm having trouble connecting right now. Please try again.",
+                tasks=[]
+            )
+        return self._parse_response(raw, user_prompt)
 
-        # --- Fallback: JSON Planner (Only for potential RAG / Ambiguous cases) ---
-        print(f"[MILES_DEBUG_V3] JSON PLANNER ACTIVATED for '{user_prompt}'")
-        chat = self.model.start_chat(history=history)
-        
-        # Retry loop for API Rotation (JSON Mode)
-        max_retries = len(self.api_keys) + 1
-        for attempt in range(max_retries):
+    def _call_gemini_json(self, user_prompt: str) -> str | None:
+        """
+        Call Gemini in JSON mode WITHOUT conversation history.
+        History was the root cause of re-planning: Gemini saw "conduct research on X"
+        in history and applied it to unrelated follow-up questions.
+        """
+        for attempt in range(len(self.api_keys) + 1):
             try:
+                # Fresh chat every time — no stale history contamination
+                chat = self.model.start_chat(history=[])
                 response = chat.send_message(
-                    f"User Request: {user_prompt}\n\nRemember to return ONLY JSON.",
+                    f"User message: {user_prompt}",
                     generation_config=genai.types.GenerationConfig(
                         response_mime_type="application/json"
                     ),
                 )
-                break # Success
+                return response.text
             except Exception as e:
-                is_rate_limit = "429" in str(e) or "ResourceExhausted" in str(e) or "QuotaExceeded" in str(e)
-                if is_rate_limit:
-                     print(f"[MILES] Rate Limit (JSON). Rotating...")
-                     if self._rotate_key():
-                         chat = self.model.start_chat(history=history)
-                         continue
-                print(f"[MILES] Brain Error or Rotation Failed: {e}")
-                # Don't raise, just let it fall to catch block
-                break
+                is_rate = any(x in str(e) for x in ["429", "ResourceExhausted", "QuotaExceeded"])
+                if is_rate and self._rotate_key():
+                    continue
+                print(f"[MILES] Gemini error: {e}")
+                return None
+        return None
 
+    def _parse_response(self, raw: str, original_prompt: str) -> OrchestratorPlan:
         try:
-            # Check if response exists (it might not if loop broke)
-            if 'response' not in locals():
-                 raise Exception("No response from Gemini (All keys exhausted?)")
+            cleaned = raw.strip().removeprefix("```json").removesuffix("```").strip()
+            data: Any = json.loads(cleaned)
 
-            json_text = response.text.strip().replace("```json", "").replace("```", "")
-            plan_data: Any = json.loads(json_text)
-            
-            if "tasks" not in plan_data: plan_data["tasks"] = []
-            
-            # Save response
-            if plan_data.get("direct_response"):
-                memory.add_message("model", plan_data["direct_response"])
+            if not isinstance(data, dict):
+                raise ValueError("Not a dict")
 
-            if plan_data.get("save_memory") and memory.active_session_files:
-                last_file = memory.active_session_files[-1]
-                saved_path = memory.save_model_permanently(os.path.basename(last_file))
-                if saved_path: memory.add_message("model", f"System: Model saved to {saved_path}")
+            direct_response = data.get("direct_response") or None
+            tasks = data.get("tasks") or []
 
-            return OrchestratorPlan(**plan_data)
-        
+            # Guard: if direct_response is itself JSON, unwrap it
+            if direct_response and direct_response.strip().startswith("{"):
+                print("[MILES] WARNING: direct_response contained JSON — unwrapping")
+                try:
+                    inner = json.loads(direct_response)
+                    direct_response = inner.get("direct_response") or "Done."
+                    if not tasks:
+                        tasks = inner.get("tasks") or []
+                except Exception:
+                    direct_response = "I processed your request."
+
+            # Guard: strip any spurious 3D or RAG tasks from a direct-chat reply
+            # (only keep tasks if there's no direct_response)
+            if direct_response and tasks:
+                print("[MILES] WARNING: Gemini added tasks to a direct reply — stripping spurious tasks")
+                tasks = []
+
+            return OrchestratorPlan(direct_response=direct_response, tasks=tasks)
+
         except Exception as exc:
-             print(f"[MILES_DEBUG_V3] JSON Parsing Failed: {exc}. Fallback Logic.")
-             # DISABLE RAG FALLBACK for safety.
-             # If the brain is broken, we should not burn tokens on RAG.
-             return OrchestratorPlan(
-                direct_response="My brain is tired (Rate Limit Reached). Please check API keys.",
-                tasks=[]
-            )
+            print(f"[MILES] JSON parse failed: {exc}")
+            # Best-effort: return raw text as plain response
+            return OrchestratorPlan(direct_response=raw.strip(), tasks=[])
 
     def answer_prompt(self, user_prompt: str) -> str:
-        """
-        Legacy method. Now just delegates to decompose_task and returns the direct response.
-        """
         plan = self.decompose_task(user_prompt)
         return plan.direct_response or "No response generated."
-

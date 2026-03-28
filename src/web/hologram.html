@@ -1,205 +1,328 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MILES Hologram Display</title>
-    <!-- Model Viewer for easy 3D display -->
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <title>MILES — Hologram</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #000000;
-            /* CRITICAL: Pure black for Pepper's Ghost */
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            color: #333;
-            font-family: sans-serif;
-        }
-
-        model-viewer {
-            width: 80%;
-            /* Leave some margin so it doesn't clip in pyramid */
-            height: 80%;
-            /* --poster-color: transparent; */
-        }
-
-        #status {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #00ff00;
-            font-size: 12px;
-            z-index: 100;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+        #three-container { width: 100vw; height: 100vh; display: block; }
     </style>
+
+    <!-- Three.js CDN import map (no npm/Electron needed) -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+        }
+    }
+    </script>
 </head>
-
 <body>
+    <div id="three-container"></div>
 
-    <div id="status">Connecting...</div>
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    <div id="overlay"
-        style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:999;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;font-family:sans-serif;text-align:center;">
-        <h1 style="color:#00ff00; text-shadow:0 0 10px #00ff00;">MILES PROTOCOL</h1>
-        <p>Holographic Interface</p>
-        <button id="start-btn"
-            style="padding:15px 30px; font-size:18px; background:transparent; border:2px solid #00ff00; color:#00ff00; margin-top:20px;">INITIALIZE
-            DISPLAY</button>
-    </div>
+        // ═══════════════════════════════════════════════════════════════
+        // SCENE SETUP
+        // ═══════════════════════════════════════════════════════════════
+        const container = document.getElementById('three-container');
 
-    <!-- Permanent Fullscreen Toggle (Hidden when active) -->
-    <div id="fs-toggle"
-        style="position:absolute; bottom:20px; right:20px; z-index:100; color:#333; opacity:0.3; font-size:24px; cursor:pointer;">
-        &#x26F6;</div>
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
 
-    <model-viewer id="hologram" src="" alt="Holographic Model" camera-controls shadow-intensity="1"
-        camera-orbit="0deg 75deg 105%" min-camera-orbit="auto auto auto" max-camera-orbit="auto auto auto"
-        interaction-prompt="none"></model-viewer>
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 0, 5);
 
-    <script>
-        const statusEl = document.getElementById('status');
-        const viewer = document.getElementById('hologram');
-        const overlay = document.getElementById('overlay');
-        const startBtn = document.getElementById('start-btn');
-        const fsToggle = document.getElementById('fs-toggle');
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        container.appendChild(renderer.domElement);
 
-        // Debug Log (Hidden)
-        function log(msg) {
-            console.log(msg);
-        }
+        // ═══════════════════════════════════════════════════════════════
+        // LIGHTING
+        // ═══════════════════════════════════════════════════════════════
+        scene.add(new THREE.AmbientLight(0xffffff, 3.0));
 
-        function enterFullscreen() {
-            const docEl = document.documentElement;
-            if (docEl.requestFullscreen) {
-                docEl.requestFullscreen();
-            } else if (docEl.webkitRequestFullscreen) {
-                docEl.webkitRequestFullscreen();
+        const dirLight = new THREE.DirectionalLight(0xffffff, 8.0);
+        dirLight.position.set(5, 10, 7.5);
+        scene.add(dirLight);
+
+        const fillLight = new THREE.DirectionalLight(0xffffff, 4.0);
+        fillLight.position.set(-5, 5, -5);
+        scene.add(fillLight);
+
+        const pointLight = new THREE.PointLight(0xff9900, 5, 100);
+        pointLight.position.set(-5, 0, 5);
+        scene.add(pointLight);
+
+        // ═══════════════════════════════════════════════════════════════
+        // MODEL LOADING
+        // ═══════════════════════════════════════════════════════════════
+        const loader = new GLTFLoader();
+        const MODEL_SCALE = 3.0;
+        let targetModel = null;
+
+        function loadModel(url) {
+            // Remove previous model
+            if (targetModel) {
+                scene.remove(targetModel);
+                targetModel.traverse(child => {
+                    if (child.isMesh) {
+                        child.geometry.dispose();
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+                targetModel = null;
             }
-            overlay.style.display = 'none';
+
+            loader.load(url,
+                (gltf) => {
+                    targetModel = gltf.scene;
+
+                    // ── Auto-center at world origin (from spec) ────────────
+                    const box    = new THREE.Box3().setFromObject(targetModel);
+                    const size   = box.getSize(new THREE.Vector3());
+                    const center = box.getCenter(new THREE.Vector3());
+                    targetModel.position.sub(center);
+
+                    // ── Normalize scale to fill view (from spec) ───────────
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const scale  = MODEL_SCALE / maxDim;
+                    targetModel.scale.set(scale, scale, scale);
+
+                    scene.add(targetModel);
+
+                    // Reset interaction state on new model load
+                    currentScale     = MODEL_SCALE;
+                    targetScale      = MODEL_SCALE;
+                    targetRotationY  = 0;
+                    targetRotationX  = 0;
+                    angularVelocity  = 0.5;
+                    isPinching       = false;
+                    isZooming        = false;
+                },
+                undefined,
+                (err) => console.error('[MILES] Model load error:', err)
+            );
         }
 
-        startBtn.addEventListener('click', enterFullscreen);
-        fsToggle.addEventListener('click', enterFullscreen);
+        // ═══════════════════════════════════════════════════════════════
+        // INTERACTION STATE — EXACT VALUES FROM SPEC
+        // ═══════════════════════════════════════════════════════════════
 
-        // --- WebSocket Setup ---
+        // Physics constants
+        let   angularVelocity  = 0.5;   // initial idle spin speed (rad/s)
+        const FRICTION         = 0.98;  // velocity decay per frame
+        const RETURN_SPEED     = 0.01;  // how fast it returns to idle spin
+        const IDLE_SPIN_SPEED  = 0.5;   // target idle angular velocity
+
+        // Pinch rotation state
+        let isPinching      = false;
+        let pinchStartX     = 0;
+        let pinchStartY     = 0;
+        let pinchStartRotY  = 0;
+        let pinchStartRotX  = 0;
+        let targetRotationY = 0;
+        let targetRotationX = 0;
+
+        // Zoom state
+        let isZooming    = false;
+        let baseHandSize = 0.25;
+        let currentScale = MODEL_SCALE;
+        let targetScale  = MODEL_SCALE;
+
+        // Smoothing (lerp factors per frame)
+        const ROTATION_SMOOTHING = 0.25;
+        const SCALE_SMOOTHING    = 0.08;
+
+        // ═══════════════════════════════════════════════════════════════
+        // GESTURE HANDLER — exact logic from spec's renderer.js
+        // ═══════════════════════════════════════════════════════════════
+        function handleGestureData(rawString) {
+            try {
+                const v = rawString.trim().split(',').map(parseFloat);
+                if (v.length < 8 || !targetModel) return;
+
+                const newPinch = v[0] === 1;
+                const pinchX   = v[1];
+                const pinchY   = v[2];
+                // v[3] = pinchZ (unused)
+                const openHand = v[4] === 1;
+                const handSize = v[5];
+                // v[6] = wristX, v[7] = wristY (unused here — rotation uses pinchX/Y)
+
+                // ── PINCH → ROTATE ────────────────────────────────────
+                if (newPinch) {
+                    if (!isPinching) {
+                        // Record start state on pinch begin
+                        isPinching      = true;
+                        pinchStartX     = pinchX;
+                        pinchStartY     = pinchY;
+                        pinchStartRotY  = targetModel.rotation.y;
+                        pinchStartRotX  = targetModel.rotation.x;
+                        targetRotationY = targetModel.rotation.y;
+                        targetRotationX = targetModel.rotation.x;
+                        angularVelocity = 0; // stop idle spin on grab
+                    }
+
+                    // Rotation = start + delta (no drift accumulation)
+                    targetRotationY = pinchStartRotY + ((pinchX - pinchStartX) * 8.0);
+                    targetRotationX = THREE.MathUtils.clamp(
+                        pinchStartRotX + ((pinchY - pinchStartY) * 6.0),
+                        -1.2, 1.2  // prevent flipping
+                    );
+
+                    pointLight.color.setHex(0xff00ff);
+
+                } else {
+                    if (isPinching) {
+                        // Snapshot current rotation as new target on release
+                        targetRotationY = targetModel.rotation.y;
+                        targetRotationX = targetModel.rotation.x;
+                    }
+                    isPinching = false;
+                }
+
+                // ── OPEN HAND → ZOOM ───────────────────────────────────
+                if (openHand && !newPinch) {
+                    if (!isZooming) {
+                        isZooming    = true;
+                        baseHandSize = handSize; // record baseline
+                    }
+                    const sizeDelta = handSize - baseHandSize;
+                    targetScale = THREE.MathUtils.clamp(
+                        MODEL_SCALE + (sizeDelta * 15.0),
+                        0.5, 8.0
+                    );
+                    pointLight.color.setHex(0x00ffff);
+                } else {
+                    isZooming = false;
+                }
+
+                // ── IDLE: drift scale back to default ─────────────────
+                if (!newPinch && !openHand) {
+                    targetScale = THREE.MathUtils.lerp(targetScale, MODEL_SCALE, 0.02);
+                    pointLight.color.setHex(0xff9900);
+                }
+
+            } catch (e) {
+                console.error('[MILES] Gesture handler error:', e);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // WEBSOCKET — receives both hand data (raw CSV) and model broadcasts (JSON)
+        // ═══════════════════════════════════════════════════════════════
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/hologram/display`;
-
-        let ws;
-
-        // State for smooth interpolation
-        let targetOrbit = { theta: 0, phi: 75, radius: 105 };
-        let currentOrbit = { theta: 0, phi: 75, radius: 105 };
-
-        // Interaction State
-        let isInteracting = false;
-        let lastHandX = 0;
-        let lastPinchState = false;
-
-        // Auto-rotation
-        let autoRotateSpeed = 0.2; // Degrees per frame
+        const wsUrl    = `${protocol}//${window.location.host}/ws/hologram/display`;
+        let   ws;
 
         function connect() {
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
-                log("WS Open - v4.0");
-                statusEl.textContent = "Connected v4";
-                statusEl.style.color = "#00ff00";
+                console.log('[MILES] WebSocket connected');
             };
 
             ws.onmessage = (event) => {
-                // If it starts with {, it's likely JSON command
-                if (typeof event.data === 'string' && event.data.startsWith("{")) {
-                    try {
-                        const cmd = JSON.parse(event.data);
-                        log("CMD: " + cmd.type);
-                        if (cmd.type === 'load_model') {
-                            log("Loading: " + cmd.url);
-                            viewer.src = cmd.url;
-                        } else if (cmd.type === 'status') {
-                            log("STATUS: " + cmd.msg);
-                        }
-                    } catch (e) {
-                        log("Err: " + e.message);
+                const raw = event.data;
+
+                // Try JSON first (model broadcast / structured command)
+                try {
+                    const msg = JSON.parse(raw);
+
+                    if (msg.type === 'load_model') {
+                        // Server sends { type:'load_model', url:'/models/...' }
+                        const url = msg.url || msg.data?.url;
+                        if (url) loadModel(url);
+                        return;
                     }
-                } else if (typeof event.data === 'string') {
-                    // Hand tracking data (comma separated)
-                    const parts = event.data.split(',');
-                    if (parts.length >= 9) {
-                        handleHandData(parts);
+
+                    // Any other JSON type that wraps hand data
+                    if (msg.type === 'hand_data' || msg.type === 'udp') {
+                        handleGestureData(msg.data || '');
+                        return;
                     }
+
+                } catch {
+                    // Not JSON → raw CSV gesture packet from UDP bridge
+                    handleGestureData(raw);
                 }
             };
 
             ws.onclose = () => {
-                statusEl.textContent = "Disconnected. Retrying...";
+                console.log('[MILES] WebSocket closed — reconnecting in 2s…');
                 setTimeout(connect, 2000);
+            };
+
+            ws.onerror = (e) => {
+                console.error('[MILES] WebSocket error:', e);
             };
         }
 
-        function handleHandData(data) {
-            // Data mapping:
-            // 0: pinch_active (1/0)
-            // 1-3: pinch x,y,z
-            // 5-7: grab x,y,z (Using Hand X)
-
-            const isPinch = parseInt(data[0]) === 1;
-            const broadHandX = parseFloat(data[5]);
-
-            // LOGIC:
-            if (isPinch) {
-                // If just started pinching, reset anchor
-                if (!lastPinchState) {
-                    lastHandX = broadHandX;
-                    log("Pinch Start: " + broadHandX.toFixed(2));
-                }
-
-                // Calculate Delta
-                const deltaX = broadHandX - lastHandX;
-
-                // Increased Sensitivity: 360 degrees per screen width
-                targetOrbit.theta -= deltaX * 360;
-
-                lastHandX = broadHandX;
-                isInteracting = true;
-            } else {
-                if (lastPinchState) log("Pinch Released");
-                isInteracting = false;
-            }
-            lastPinchState = isPinch;
-        }
-
-        // Start Loop
         connect();
 
-        // ANIMATION LOOP
+        // ═══════════════════════════════════════════════════════════════
+        // ANIMATION LOOP — exact physics from spec
+        // ═══════════════════════════════════════════════════════════════
+        const clock = new THREE.Clock();
+
         function animate() {
-            // Auto-rotate if not interacting
-            if (!isInteracting) {
-                targetOrbit.theta += autoRotateSpeed;
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta();
+
+            if (targetModel) {
+                if (isPinching) {
+                    // Smoothly lerp to target rotation (rotationSmoothing = 0.25)
+                    targetModel.rotation.y = THREE.MathUtils.lerp(
+                        targetModel.rotation.y, targetRotationY, ROTATION_SMOOTHING
+                    );
+                    targetModel.rotation.x = THREE.MathUtils.lerp(
+                        targetModel.rotation.x, targetRotationX, ROTATION_SMOOTHING
+                    );
+                } else {
+                    // Physics-based idle spin
+                    targetModel.rotation.y += angularVelocity * dt;
+                    angularVelocity *= FRICTION;                                                   // decay
+                    angularVelocity  = THREE.MathUtils.lerp(angularVelocity, IDLE_SPIN_SPEED, RETURN_SPEED); // return to spin
+                    targetModel.rotation.x = THREE.MathUtils.lerp(targetModel.rotation.x, 0, dt * 0.5); // level out tilt
+                }
+
+                // Smooth scale (scaleSmoothing = 0.08)
+                currentScale = THREE.MathUtils.lerp(currentScale, targetScale, SCALE_SMOOTHING);
+                targetModel.scale.set(currentScale, currentScale, currentScale);
             }
 
-            // Smooth lerp for Theta
-            const alpha = 0.1;
-            currentOrbit.theta += (targetOrbit.theta - currentOrbit.theta) * alpha;
-
-            // Apply to viewer
-            viewer.cameraOrbit = `${currentOrbit.theta}deg ${currentOrbit.phi}deg ${currentOrbit.radius}%`;
-
-            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
         }
 
-        // Start animation immediately
-        requestAnimationFrame(animate);
+        animate();
 
+        // ═══════════════════════════════════════════════════════════════
+        // RESPONSIVE RESIZE
+        // ═══════════════════════════════════════════════════════════════
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
     </script>
 </body>
-
 </html>

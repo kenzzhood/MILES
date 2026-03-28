@@ -22,6 +22,8 @@ async def lifespan(app: FastAPI):
     # Startup
     print("[MILES] Starting System v2.0 (STRICT CHAT MODE)...")
     sf3d_service.start_service()
+    # Start UDP → WebSocket bridge for hand tracker (port 5052)
+    await hologram_websocket.start_udp_listener()
     yield
     # Shutdown
     print("[MILES] Shutting Down...")
