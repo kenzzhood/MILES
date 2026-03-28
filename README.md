@@ -1,120 +1,172 @@
-<p align="center">
-  <img src="assets/banner.png" alt="MILES Banner" width="100%">
-</p>
+<div align="center">
 
-<h1 align="center">MILES</h1>
-<p align="center">
-  <strong>Multimodal Intelligent Agent System</strong>
-</p>
+<img src="https://img.shields.io/badge/Python-3.9+-blue.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+<img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi" alt="FastAPI" />
+<img src="https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white" alt="Flutter" />
+<img src="https://img.shields.io/badge/Hugging%20Face-Models-orange?style=for-the-badge" alt="Hugging Face" />
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
-  <img src="https://img.shields.io/badge/Celery-37814A?style=for-the-badge&logo=celery&logoColor=white" alt="Celery">
-  <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
-  <img src="https://img.shields.io/badge/Gemini_1.5_Pro-8E75B2?style=for-the-badge&logo=google&logoColor=white" alt="Gemini">
-  <img src="https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=threedotjs&logoColor=white" alt="ThreeJS">
-</p>
+# 🌍 Wander Lens
+### *Your AI-Powered Travel Companion*
 
-> **MILES** is a next-generation cognitive agent framework leveraging a robust **Microservice Architecture**. It integrates specialized AI capabilities—such as advanced 3D generation and RAG search—under a centralized LLM Orchestrator that "thinks", plans, and executes.
+*Transform the way you explore the world with personalized, intelligent itineraries and immersive 360° VR previews.*
 
 ---
 
-## ✨ Features
+</div>
 
-- 🧠 **Centralized Intelligence Core:** Powered by Gemini 1.5 Pro to intelligently delegate tasks, manage context, and coordinate disparate microservices.
-- 🧊 **Accelerated 3D Generation Pipeline:** Fully automated Text-to-3D (Image-to-3D) workflows via **Stable Fast 3D (SF3D)** running as a dedicated local background service. Generates high-quality GLB assets in under 60 seconds with built-in background removal.
-- 🖐️ **Holographic 3D Interactive Viewer:** Premium dark-themed UI relying on customized `Three.js` integration, implementing ultra-smooth hand-tracking (via MediaPipe homography) to dynamically rotate, scale, and manipulate 3D models exactingly. 
-- 🔎 **Intelligent Deep RAG Strategy:** Real-time factual augmentation using integrated web search to build execution context unavailable in static models.
-- ⚡ **Asynchronous Microservice Backbone:** Blazing fast execution built around FastAPI, Celery queues, and Redis for distributed, non-blocking task orchestration.
+## ✨ Overview
+
+**Wander Lens** is a next-generation travel planning platform that combines the power of advanced Large Language Models (LLMs) with immersive virtual reality previews. By simply providing your destination, preferences, and budget, Wander Lens crafts personalized, detailed itineraries complete with embedded 360° VR YouTube links, allowing you to *see* your destination before you even pack your bags.
+
+It is designed with a high-performance **FastAPI** backend that dynamically orchestrates data from live web searches, Hugging Face models, and the YouTube API, seamlessly connected to a beautiful **Flutter** frontend interface.
+
+---
+
+## 🚀 Key Features
+
+- **🧠 Intelligent Itinerary Generation:** Powered by open-source LLMs (`Mistral-7B-Instruct` & `Flan-T5`), creating hyper-personalized, day-by-day travel plans based on your specific trip type, budget, and hotel location.
+- **🕶️ Immersive VR Integration:** Automatically sources and embeds the best 360° YouTube VR videos for every landmark in your itinerary.
+- **💬 Conversational AI Travel Assistant:** A dedicated, context-aware chatbot session to help you discover hidden local gems, top-rated restaurants, and get real-time practical travel advice.
+- **📄 AR Menu Previews:** (Experimental) Upload restaurant menus and extract AR model links to visualize your dishes in 3D before ordering!
+- **🌐 Real-Time Data Augmentation:** Built-in web scraping (`SerpAPI` & `BeautifulSoup`) to pull the latest reviews, events, and tips from Reddit and TripAdvisor.
+- **⚡ High-Performance Architecture:** Robust, scalable, and fully asynchronous RESTful API.
 
 ---
 
 ## 🏗️ Architecture
 
-MILES adopts an event-driven, microservices-oriented topology to separate concerns and ensure scalability between the brain, memory, and task execution instances.
+Wander Lens utilizes a hybrid architecture combining Retrieval-Augmented Generation (RAG) with multimodal outputs (Text + VR/AR links).
 
 ```mermaid
 graph TD
-    User["👤 User (Web Dashboard / 3D UI)"] -->|WebSocket / HTTP| Orchestrator
+    User["📱 User (Flutter App)"] -->|HTTP / REST| API
     
-    subgraph "Core Nervous System"
-        Orchestrator["🧠 LLM Orchestrator (FastAPI / Gemini)"]
-        Redis["🗄️ Redis Broker"]
-        CeleryWorker["⚙️ Celery Worker Pool"]
+    subgraph "FastAPI Backend"
+        API["Gateway (FastAPI)"]
+        ChatEngine["TravelChatModel (RAG + Flan-T5)"]
+        Planner["TripPlanner (Mistral-7B)"]
     end
     
-    subgraph "Specialized Services"
-        3DService["🧊 SF3D Local Service (ComfyUI)"]
-        RAGService["🔎 Search & RAG Tools"]
-        HandTracking["🖐️ WebCam / UDP Hand Tracking"]
+    subgraph "External Integrations"
+        HF["Hugging Face API"]
+        YT["YouTube Data API v3"]
+        Serp["SerpAPI (Web Search)"]
     end
     
-    Orchestrator -->|Enqueues Tasks| Redis
-    Redis -->|Dispatches| CeleryWorker
-    CeleryWorker -->|Calls API| 3DService
-    CeleryWorker -->|Executes| RAGService
-    HandTracking -.->|Controls View| User
+    API --> ChatEngine
+    API --> Planner
+
+    ChatEngine --> HF
+    ChatEngine --> Serp
+    Planner --> HF
+    Planner --> YT
 ```
 
-### Component Architecture
-- `src/orchestrator/`: The core cognitive loop. Processes incoming user context, routes workflow tools, and manages memory limits.
-- `src/services/sf3d_service.py`: Dedicated abstraction layer to control the native ComfyUI process serving SF3D queries.
-- `src/workers/`: Heavy-lifting Celery processes executing computationally or time-intensive generative pipelines.
-- `src/web/`: Aesthetically premium, reactive web frontend and 3D modeling environments.
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Backend Framework** | `FastAPI` | Asynchronous API routing, session management, and endpoints. |
+| **LLM Inference** | `Hugging Face` | Text generation for itineraries and chat responses. |
+| **Video Retrieval** | `Google API` | Fetching immersive 360° VR content for locations. |
+| **Web Scraping** | `SerpAPI` & `BeautifulSoup` | Real-time information retrieval (reviews, Reddit threads). |
+| **Embeddings/Search** | `SentenceTransformers` | Semantic search and contextual memory mapping. |
+| **Frontend** | `Flutter` | Cross-platform, responsive mobile application interface. |
 
 ---
 
-## 🚀 Getting Started
+## 💻 Installation & Setup
 
 ### Prerequisites
-- **OS:** Windows 10/11
-- **Hardware:** NVIDIA GPU (Recommended: 4GB+ VRAM for continuous local generation; validated on RTX 3050).
-- **Core Dependencies:** Local Redis Server instance required and active.
 
-### Installation
+- **Python 3.9+**
+- **Flutter SDK**
+- API Keys Required:
+  - Hugging Face Token (`HF_TOKEN`)
+  - YouTube Data API Key (`YOUTUBE_API_KEY`)
+  - SerpAPI Key (`SERPAPI_KEY`)
 
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/yourusername/MILES.git
-   cd MILES
-   ```
+### 1️⃣ Backend Setup
 
-2. **Environment Assembly:**
-   Deploy the Python specifications using the unified constraints list:
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/kenzzhood/Wander_Lens.git
+cd Wander_Lens
 
-3. **Vendor Setup (SF3D Portable):**
-   - MILES intrinsically runs operations atop `StableFast3D-WinPortable` localized in `src/libs/SF3D_Portable`.
-   - Before firing up, unpack the provided `.7z` so that `run.bat` is resolvable inside the extracted directory root.
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-4. **Configuration:**
-   - Mount your API keys and parameters inside a local `.env` file or hardcode them safely into `src/config.py`.
+# Install dependencies
+pip install -r requirements.txt
 
-### Execution Flow
+# Configure Environment Variables
+# Create a .env file in the root directory:
+echo "HF_TOKEN=your_token_here" >> .env
+echo "YOUTUBE_API_KEY=your_key_here" >> .env
+echo "SERPAPI_KEY=your_key_here" >> .env
+```
 
-A packaged initialization script seamlessly brings the API, workers, and background generation processes online. 
+### 2️⃣ Running the Microservices
 
-1. **Spin up MILES:**
-   ```bash
-   start_miles.bat
-   ```
-   *This automatically engages and minimizes the Celery background nodes, mounts the overarching FastAPI network, and bridges to the hidden ComfyUI process.*
+Wander Lens splits its architecture into two specialized local servers:
 
-2. **Engage the Interface:**
-   - Navigate to `http://localhost:8000/ui` in your browser.
-   - Command tasks using natural language, or explore models leveraging your physical hands!
+**Start the Main Itinerary Generator (Port 8002):**
+```bash
+uvicorn main:app --reload --port 8002
+```
+
+**Start the Conversational Context Chatbot (Port 8001):**
+```bash
+uvicorn Chat:app --reload --port 8001
+```
+
+### 3️⃣ Frontend Setup
+
+```bash
+# Navigate to the Flutter app directory
+cd dummy_flutter_app
+
+# Fetch packages
+flutter pub get
+
+# Run the app on your connected device/emulator
+flutter run
+```
 
 ---
 
-## 🔮 Usage Examples
+## 🌐 API Endpoints Overview
 
-*Examples to prompt the intelligent orchestrator:*
-- *"Ingest this URL and isolate a 3D model of the focal object: `C:\path\to\reference.png`."*
-- *"Look up the origin and implementation complexities of MonoSplat."*
-- *"Deploy a holographic rendering of a cyberpunk drone; map its engine specs based on theoretical design papers."*
+### Main Generator Service (`localhost:8002`)
+- **`POST /generate_itinerary`**
+  - **Payload:** `{ "location": "Tokyo", "hotel": "Shinjuku", "days": 3, "budget": "Medium", "trip_type": "Cultural" }`
+  - **Returns:** A detailed, day-by-day plan with appended `youtube_url` links pointing to 360° VR videos of the locations.
+
+### Chat & AR Service (`localhost:8001`)
+- **`POST /start_chat`**: Initializes a new session UUID.
+- **`POST /chat`**:
+  - Send messages to the AI assistant for contextual travel advice. The system remembers your location and history for 1 hour.
+- **`POST /upload_menu/{restaurant_name}`**:
+  - Upload a PDF menu. The backend parses it to extract dish items and AR 3D model links for interactive dining.
+- **`GET /ar_viewer/{model_id}`**:
+  - Serves an AR link for a requested 3D asset.
 
 ---
-> *Developed as a bleeding-edge deployment of Agentic AI paradigms interwoven with localized generative pipelines and immersive interface manipulation capabilities.*
+
+## 🤝 Contributing
+
+We welcome contributions to expand Wander Lens's capabilities!
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+<div align="center">
+  <p>Built for the modern explorer. ✈️</p>
+</div>
