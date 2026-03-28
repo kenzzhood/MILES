@@ -56,7 +56,7 @@ def get_orchestrator() -> OrchestratorBase:
         from .gemini_brain import GeminiOrchestrator
 
         if config.GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_GOES_HERE":
-            raise ValueError("Please set your GEMINI_API_KEY in src/config.py")
+            logger.warning("GEMINI_API_KEY is not set. Using Gemini mode might fail.")
 
         return GeminiOrchestrator(
             model_name=config.GEMINI_MODEL_NAME

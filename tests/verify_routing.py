@@ -5,11 +5,11 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src import config
-from src.orchestrator.gemini_orchestrator import GeminiOrchestrator
+from src.orchestrator.gemini_brain import GeminiOrchestrator
 
 def test_routing():
     print("Testing Orchestrator Routing for 'Make the handle red'...")
-    orch = GeminiOrchestrator(api_key=config.GEMINI_API_KEY, model_name=config.GEMINI_MODEL_NAME)
+    orch = GeminiOrchestrator(model_name=config.GEMINI_MODEL_NAME)
     
     prompt = "Make the handle red"
     plan = orch.decompose_task(prompt)
