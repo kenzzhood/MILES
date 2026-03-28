@@ -21,12 +21,10 @@ BRAIN_MODE = "GEMINI"
 # !! IMPORTANT: Never commit real API keys to Git.
 # !! Use environment variables in a real application.
 # !! For this research prototype, we place it here for simplicity.
-GEMINI_API_KEY = "AIzaSyCBmmF452HDbORGul3Ld3QHf40pkGFYxO8"
-GEMINI_API_KEYS = [
-    "AIzaSyCBmmF452HDbORGul3Ld3QHf40pkGFYxO8", # Primary (New Key)
-]
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_GOES_HERE")
+GEMINI_API_KEYS = os.environ.get("GEMINI_API_KEYS", "").split(",") if os.environ.get("GEMINI_API_KEYS") else []
 GEMINI_MODEL_NAME = "models/gemini-flash-latest"
-TAVILY_API_KEY = "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"
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "YOUR_TAVILY_API_KEY_HERE")
 
 # HuggingFace API Token (for SDXL Image Generation)
 HUGGINGFACE_API_TOKEN = os.environ.get("HUGGINGFACE_API_TOKEN", "")
