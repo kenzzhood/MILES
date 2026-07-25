@@ -1,172 +1,270 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/Python-3.9+-blue.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+<img src="assets/banner.png" alt="MILES banner" width="860" />
+
+<br><br>
+
+<img src="https://img.shields.io/badge/Python-3.10+-blue.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
 <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi" alt="FastAPI" />
-<img src="https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white" alt="Flutter" />
-<img src="https://img.shields.io/badge/Hugging%20Face-Models-orange?style=for-the-badge" alt="Hugging Face" />
+<img src="https://img.shields.io/badge/MediaPipe-Hands-green?style=for-the-badge" alt="MediaPipe" />
+<img src="https://img.shields.io/badge/IEEE-2026-00629B?style=for-the-badge" alt="IEEE" />
+<img src="https://img.shields.io/badge/Celery%20%2B%20Redis-async-red?style=for-the-badge" alt="Celery Redis" />
 
-# 🌍 Wander Lens
-### *Your AI-Powered Travel Companion*
+# MILES
+### Multimodal Intelligent Assistant for 3D Generation & Holographic Interaction
 
-*Transform the way you explore the world with personalized, intelligent itineraries and immersive 360° VR previews.*
+*Voice and gesture–controlled holographic AI — from a spoken request to a manipulable 3D asset.*
 
----
+[IEEE Xplore](https://doi.org/10.1109/RMKMATE69073.2026.11518707) · [Author](https://github.com/kenzzhood)
 
 </div>
 
-## ✨ Overview
+---
 
-**Wander Lens** is a next-generation travel planning platform that combines the power of advanced Large Language Models (LLMs) with immersive virtual reality previews. By simply providing your destination, preferences, and budget, Wander Lens crafts personalized, detailed itineraries complete with embedded 360° VR YouTube links, allowing you to *see* your destination before you even pack your bags.
+## Overview
 
-It is designed with a high-performance **FastAPI** backend that dynamically orchestrates data from live web searches, Hugging Face models, and the YouTube API, seamlessly connected to a beautiful **Flutter** frontend interface.
+**MILES** (Multimodal Intelligent Assistant for 3D Model Generation and Holographic Interaction Using Voice and Gesture Control) is a research system that connects generative AI to physical, spatial interaction.
+
+Traditional assistants are synchronous, screen-bound, and often hallucinate. MILES instead uses a **decoupled Orchestrator–Worker** design:
+
+1. An LLM **orchestrator** turns a vague user request into a task plan (Chain-of-Thought).
+2. Specialized **workers** run asynchronously (3D generation, web research / RAG).
+3. Generated assets appear on a **Pepper’s Ghost–style hologram** and can be manipulated with **MediaPipe hand tracking** (pinch, rotate, scale).
+
+Published at **IEEE RMKMATE 2026**.
 
 ---
 
-## 🚀 Key Features
+## Key features
 
-- **🧠 Intelligent Itinerary Generation:** Powered by open-source LLMs (`Mistral-7B-Instruct` & `Flan-T5`), creating hyper-personalized, day-by-day travel plans based on your specific trip type, budget, and hotel location.
-- **🕶️ Immersive VR Integration:** Automatically sources and embeds the best 360° YouTube VR videos for every landmark in your itinerary.
-- **💬 Conversational AI Travel Assistant:** A dedicated, context-aware chatbot session to help you discover hidden local gems, top-rated restaurants, and get real-time practical travel advice.
-- **📄 AR Menu Previews:** (Experimental) Upload restaurant menus and extract AR model links to visualize your dishes in 3D before ordering!
-- **🌐 Real-Time Data Augmentation:** Built-in web scraping (`SerpAPI` & `BeautifulSoup`) to pull the latest reviews, events, and tips from Reddit and TripAdvisor.
-- **⚡ High-Performance Architecture:** Robust, scalable, and fully asynchronous RESTful API.
+| Capability | What it does |
+| :--- | :--- |
+| **Orchestrator “brains”** | Swappable planners: Gemini API, local Ollama (`llama3.1:8b`), or a deterministic `DEMO` mock. |
+| **Async worker pool** | Celery + Redis dispatch `3D_Generator` and `RAG_Search` without blocking the chat loop. |
+| **On-demand 3D generation** | Text / image → generative 3D pipeline (SF3D / TripoSR path) serving meshes to the UI. |
+| **Grounded answers** | RAG via live web research (Tavily) to reduce hallucinations. |
+| **Holographic display** | Browser hologram viewer (`/ui/hologram.html`) with WebSocket model loading. |
+| **Gesture control** | MediaPipe Hands → UDP `5052` → WebSocket bridge for pinch / transform mapping. |
+| **Chat playground** | Static web UI at `/ui/` for interactive prompts and task streaming (SSE). |
 
 ---
 
-## 🏗️ Architecture
-
-Wander Lens utilizes a hybrid architecture combining Retrieval-Augmented Generation (RAG) with multimodal outputs (Text + VR/AR links).
+## Architecture
 
 ```mermaid
 graph TD
-    User["📱 User (Flutter App)"] -->|HTTP / REST| API
-    
-    subgraph "FastAPI Backend"
-        API["Gateway (FastAPI)"]
-        ChatEngine["TravelChatModel (RAG + Flan-T5)"]
-        Planner["TripPlanner (Mistral-7B)"]
-    end
-    
-    subgraph "External Integrations"
-        HF["Hugging Face API"]
-        YT["YouTube Data API v3"]
-        Serp["SerpAPI (Web Search)"]
-    end
-    
-    API --> ChatEngine
-    API --> Planner
+    User["User — voice / text / gesture"] --> API["FastAPI Orchestrator :8001"]
 
-    ChatEngine --> HF
-    ChatEngine --> Serp
-    Planner --> HF
-    Planner --> YT
+    subgraph Orchestrator
+        Brain["Brain — Gemini · Ollama · DEMO"]
+        Plan["Task plan + direct reply"]
+        Brain --> Plan
+    end
+
+    API --> Brain
+    Plan -->|Celery tasks| Queue["Redis + Celery workers"]
+
+    Queue --> Gen3D["Worker: 3D_Generator"]
+    Queue --> RAG["Worker: RAG_Search"]
+
+    Gen3D --> Models["/models — GLB / mesh assets"]
+    RAG --> Memory["Grounded context"]
+
+    Models --> Holo["Hologram viewer"]
+    Hands["MediaPipe hand tracker"] -->|UDP 5052| Bridge["WebSocket bridge"]
+    Bridge --> Holo
+    Memory --> API
+```
+
+**Request flow**
+
+1. `POST /api/v1/interact` — orchestrator decomposes the prompt.
+2. Tasks are queued; client polls `GET /api/v1/tasks/{id}` or streams `GET /api/v1/stream/{id}`.
+3. Completed meshes are served under `/models` and pushed to the hologram display.
+4. Hand tracker runs as a separate process; gestures update the live hologram scene.
+
+---
+
+## Repository layout
+
+```text
+MILES/
+├── src/
+│   ├── main.py                 # FastAPI app + lifespan (SF3D + UDP bridge)
+│   ├── config.py               # BRAIN_MODE, API keys, Redis URLs
+│   ├── api/
+│   │   ├── endpoints.py        # /interact, /tasks, /stream
+│   │   └── hologram_websocket.py
+│   ├── orchestrator/           # Gemini / Ollama / mock brains
+│   ├── workers/                # Celery app + 3D + RAG tasks
+│   ├── services/               # hand_tracker, SF3D, image gen
+│   └── web/                    # Chat UI + hologram viewer
+├── models/                     # Generated assets
+├── scripts/                    # Research / utility helpers
+├── start_miles.bat             # Windows one-shot launcher
+└── requirements.txt
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## Tech stack
 
-| Component | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Backend Framework** | `FastAPI` | Asynchronous API routing, session management, and endpoints. |
-| **LLM Inference** | `Hugging Face` | Text generation for itineraries and chat responses. |
-| **Video Retrieval** | `Google API` | Fetching immersive 360° VR content for locations. |
-| **Web Scraping** | `SerpAPI` & `BeautifulSoup` | Real-time information retrieval (reviews, Reddit threads). |
-| **Embeddings/Search** | `SentenceTransformers` | Semantic search and contextual memory mapping. |
-| **Frontend** | `Flutter` | Cross-platform, responsive mobile application interface. |
+| Layer | Stack |
+| :--- | :--- |
+| API | FastAPI, Uvicorn, Pydantic |
+| Orchestration | Gemini / Ollama / DEMO brains |
+| Async jobs | Celery, Redis |
+| 3D | Torch, Transformers, rembg, Trimesh, SF3D / TripoSR |
+| Research | Tavily, requests |
+| Interaction | MediaPipe Hands, OpenCV, WebSocket, UDP |
+| Frontend | Static HTML/JS hologram + chat UI |
 
 ---
 
-## 💻 Installation & Setup
+## Quick start
 
 ### Prerequisites
 
-- **Python 3.9+**
-- **Flutter SDK**
-- API Keys Required:
-  - Hugging Face Token (`HF_TOKEN`)
-  - YouTube Data API Key (`YOUTUBE_API_KEY`)
-  - SerpAPI Key (`SERPAPI_KEY`)
+- Python **3.10+**
+- **Redis** running locally (`localhost:6379`)
+- Webcam (for gesture control)
+- API keys (depending on brain mode):
+  - `GEMINI_API_KEY` (or `GEMINI_API_KEYS`)
+  - `TAVILY_API_KEY`
+  - optional `HUGGINGFACE_API_TOKEN`
 
-### 1️⃣ Backend Setup
+### Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/kenzzhood/Wander_Lens.git
-cd Wander_Lens
+git clone https://github.com/kenzzhood/MILES.git
+cd MILES
 
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 
-# Install dependencies
 pip install -r requirements.txt
-
-# Configure Environment Variables
-# Create a .env file in the root directory:
-echo "HF_TOKEN=your_token_here" >> .env
-echo "YOUTUBE_API_KEY=your_key_here" >> .env
-echo "SERPAPI_KEY=your_key_here" >> .env
 ```
 
-### 2️⃣ Running the Microservices
+### Configure
 
-Wander Lens splits its architecture into two specialized local servers:
+Create `src/.env`:
 
-**Start the Main Itinerary Generator (Port 8002):**
-```bash
-uvicorn main:app --reload --port 8002
+```env
+GEMINI_API_KEY=your_gemini_key
+TAVILY_API_KEY=your_tavily_key
+HUGGINGFACE_API_TOKEN=optional_hf_token
 ```
 
-**Start the Conversational Context Chatbot (Port 8001):**
-```bash
-uvicorn Chat:app --reload --port 8001
+In `src/config.py`, set the orchestrator mode:
+
+```python
+BRAIN_MODE = "GEMINI"   # or "LOCAL" or "DEMO"
 ```
 
-### 3️⃣ Frontend Setup
+For `LOCAL`, pull a model first:
 
 ```bash
-# Navigate to the Flutter app directory
-cd dummy_flutter_app
+ollama run llama3.1:8b
+```
 
-# Fetch packages
-flutter pub get
+### Run (recommended — three processes)
 
-# Run the app on your connected device/emulator
-flutter run
+**1. Celery worker**
+
+```bash
+celery -A src.workers.celery_app worker --loglevel=info -P solo
+```
+
+**2. Hand tracker** (gesture → hologram)
+
+```bash
+python -m src.services.hand_tracker
+```
+
+**3. API + web UI**
+
+```bash
+uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+```
+
+On Windows you can also use:
+
+```bat
+start_miles.bat
+```
+
+### Open the UI
+
+| Surface | URL |
+| :--- | :--- |
+| Health check | http://localhost:8001/ |
+| Chat playground | http://localhost:8001/ui/ |
+| Hologram viewer | http://localhost:8001/ui/hologram.html |
+
+---
+
+## API
+
+### `POST /api/v1/interact`
+
+Accepts a user prompt, returns a plan, optional direct reply, and Celery task IDs.
+
+```bash
+curl -X POST http://localhost:8001/api/v1/interact \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Generate a holographic model of a vintage camera"}'
+```
+
+### `GET /api/v1/tasks/{task_id}`
+
+Poll worker status / result.
+
+### `GET /api/v1/stream/{task_id}`
+
+Server-Sent Events progress stream for long-running 3D / research jobs.
+
+---
+
+## Gesture & hologram pipeline
+
+1. `hand_tracker` captures webcam frames with **MediaPipe Hands** (adaptive pinch, debounce, crowd filter).
+2. Landmarks are sent over **UDP** to `127.0.0.1:5052`.
+3. FastAPI’s hologram bridge fans updates out to connected **WebSocket** displays.
+4. The hologram page loads generated meshes and applies live transforms from pinch / hand motion — designed for Pepper’s Ghost setups (HoloInteract).
+
+---
+
+## Publication
+
+**MILES: Multimodal Intelligent Assistant for 3D Model Generation and Holographic Interaction Using Voice and Gesture Control**
+
+Goutham Srinath Karel Marx, Jeeva Karthikeyan, Dr. Sreeji S  
+Sathyabama Institute of Science and Technology  
+**IEEE RMKMATE 2026** · [doi:10.1109/RMKMATE69073.2026.11518707](https://doi.org/10.1109/RMKMATE69073.2026.11518707)
+
+```bibtex
+@inproceedings{miles2026,
+  title     = {MILES: Multimodal Intelligent Assistant for 3D Model Generation and Holographic Interaction Using Voice and Gesture Control},
+  author    = {Karel Marx, Goutham Srinath and Karthikeyan, Jeeva and S, Sreeji},
+  booktitle = {IEEE RMKMATE},
+  year      = {2026},
+  doi       = {10.1109/RMKMATE69073.2026.11518707}
+}
 ```
 
 ---
 
-## 🌐 API Endpoints Overview
+## Notes
 
-### Main Generator Service (`localhost:8002`)
-- **`POST /generate_itinerary`**
-  - **Payload:** `{ "location": "Tokyo", "hotel": "Shinjuku", "days": 3, "budget": "Medium", "trip_type": "Cultural" }`
-  - **Returns:** A detailed, day-by-day plan with appended `youtube_url` links pointing to 360° VR videos of the locations.
-
-### Chat & AR Service (`localhost:8001`)
-- **`POST /start_chat`**: Initializes a new session UUID.
-- **`POST /chat`**:
-  - Send messages to the AI assistant for contextual travel advice. The system remembers your location and history for 1 hour.
-- **`POST /upload_menu/{restaurant_name}`**:
-  - Upload a PDF menu. The backend parses it to extract dish items and AR 3D model links for interactive dining.
-- **`GET /ar_viewer/{model_id}`**:
-  - Serves an AR link for a requested 3D asset.
-
----
-
-## 🤝 Contributing
-
-We welcome contributions to expand Wander Lens's capabilities!
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+- Treat API keys as secrets — keep them in `src/.env`, never commit real credentials.
+- 3D generation is GPU-friendly; CPU-only runs will be slow.
+- Redis must be up before Celery workers can process tasks.
+- Demo / research prototype — paths and worker names may evolve as the worker pool expands.
 
 ---
 
 <div align="center">
-  <p>Built for the modern explorer. ✈️</p>
+
+Built for immersive human–AI collaboration — from prompt to hologram.
+
 </div>
